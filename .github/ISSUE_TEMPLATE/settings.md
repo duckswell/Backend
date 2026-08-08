@@ -2,7 +2,7 @@
 name: "🔧 Settings"
 about: 설정/환경/CI-CD 등
 title: "🔧 Settings: "
-labels: ["settings"]
+labels: ["🔧 Settings"]
 ---
 
 ## 🎯 목적

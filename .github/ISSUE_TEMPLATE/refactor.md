@@ -2,7 +2,7 @@
 name: "♻️ Refactor"
 about: 리팩터링
 title: "♻️ Refactor: "
-labels: ["refactor"]
+labels: ["♻️ Refactor"]
 ---
 
 ## 🎯 목적

@@ -2,7 +2,7 @@
 name: "✨ Feature"
 about: 새로운 기능 개발
 title: "✨ Feature: "
-labels: ["feature"]
+labels: ["✨ Feature"]
 ---
 
 ## 📌 작업 내용
