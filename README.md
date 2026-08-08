@@ -63,22 +63,19 @@
 <tr>
 <th align="center">Backend</th>
 <td align="left">
-<img height="50" src="https://user-images.githubusercontent.com/25181517/117201156-9a724800-adec-11eb-9a9d-3cd0f67da4bc.png" title="Java">
-<img height="50" src="https://user-images.githubusercontent.com/25181517/183891303-41f257f8-6b3d-487c-aa56-c497b880d0fb.png" title="Spring Boot">
-<img height="50" src="https://cdn.simpleicons.org/gradle/02303A" title="Gradle">
-<img height="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/intellij.png" title="IntelliJ IDEA"><br>
+<img src="https://skillicons.dev/icons?i=java,spring,gradle,idea" alt="Java, Spring Boot, Gradle, IntelliJ">
 </td>
 </tr>
 <tr>
 <th align="center">Database</th>
 <td align="left">
-<img height="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/mysql.png" title="MySQL">
+<img src="https://skillicons.dev/icons?i=mysql" alt="MySQL">
 </td>
 </tr>
 <tr>
 <th align="center">API Docs</th>
 <td align="left">
-<img height="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/swagger.png" title="Swagger">
+<img height="40" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/swagger.png" title="Swagger">
 </td>
 </tr>
 <tr>
@@ -88,10 +85,7 @@
 <tr>
 <th align="center">Collaboration</th>
 <td align="left">
-<img height="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/git.png" title="Git">
-<img height="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/github.png" title="GitHub">
-<img height="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/figma.png" title="Figma">
-<img height="50" src="https://cdn.simpleicons.org/notion/000000" title="Notion">
+<img src="https://skillicons.dev/icons?i=git,github,figma,notion" alt="Git, GitHub, Figma, Notion">
 </td>
 </tr>
 <tr>
