@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: duckswell
+  profiles:
+    active: local
