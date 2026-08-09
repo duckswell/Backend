@@ -2,7 +2,9 @@
 -- 대상 DB: duckswell (로컬 MySQL, 각자 본인 환경에 한 번만 실행)
 -- 실행 전: application-local.yml 기준 duckswell DB가 생성돼 있어야 하고,
 --          앱을 한 번 bootRun 해서 Hibernate(ddl-auto=update)가 테이블을 만든 상태여야 함
--- 실행: mysql -u root -p --default-character-set=utf8mb4 -D duckswell < sql/seed_shop_demo.sql
+-- 실행 순서: 1) 이 파일, 2) sql/products_seed.sql (실제 상품 데이터, ingredient가 있어야 하므로 반드시 이 다음)
+--   mysql -u root -p --default-character-set=utf8mb4 -D duckswell < sql/seed_shop_demo.sql
+--   mysql -u root -p --default-character-set=utf8mb4 -D duckswell < sql/products_seed.sql
 -- member_id = 1 (MemberSeeder가 만드는 기본 회원) 기준
 
 -- 1) routine_type 코드 테이블 (course.routine_type_code FK 대상)
@@ -43,24 +45,7 @@ INSERT INTO ingredient_tag (ingredient_id, tag) VALUES
   (@aloe, '진정'), (@aloe, '수분 공급'), (@aloe, '쿨링'),
   (@zincPca, '피지 조절'), (@zincPca, '번들거림 완화'), (@zincPca, '피부 청결');
 
--- 3) product (성분당 2개, ProductCategory 다양하게 분산 / 링크·이미지는 더미 placeholder)
-INSERT INTO product (ingredient_id, name, brand, category, image_url, link_url, created_at, updated_at) VALUES
-  (@vitaminC,    '비타민C 앰플',       '브런드글로우', 'AMPOULE_SERUM', 'https://example.com/images/vitc-ampoule.jpg', 'https://example.com/products/vitc-ampoule', NOW(), NOW()),
-  (@vitaminC,    '비타민C 토너',       '브런드글로우', 'SKIN_TONER',    'https://example.com/images/vitc-toner.jpg',    'https://example.com/products/vitc-toner',    NOW(), NOW()),
-  (@niacinamide, '나이아신아마이드 세럼', '더모랩',      'AMPOULE_SERUM', 'https://example.com/images/niacin-serum.jpg',  'https://example.com/products/niacin-serum',  NOW(), NOW()),
-  (@niacinamide, '나이아신아마이드 크림', '더모랩',      'CREAM',         'https://example.com/images/niacin-cream.jpg',  'https://example.com/products/niacin-cream',  NOW(), NOW()),
-  (@hyaluronic,  '히알루론산 토너',     '아쿠아베이스', 'SKIN_TONER',    'https://example.com/images/ha-toner.jpg',      'https://example.com/products/ha-toner',      NOW(), NOW()),
-  (@hyaluronic,  '히알루론산 미스트',   '아쿠아베이스', 'MIST_OIL',      'https://example.com/images/ha-mist.jpg',       'https://example.com/products/ha-mist',       NOW(), NOW()),
-  (@ceramide,    '세라마이드 크림',     '베리어랩',    'CREAM',         'https://example.com/images/ceramide-cream.jpg','https://example.com/products/ceramide-cream',NOW(), NOW()),
-  (@ceramide,    '세라마이드 앰플',     '베리어랩',    'AMPOULE_SERUM', 'https://example.com/images/ceramide-amp.jpg',  'https://example.com/products/ceramide-amp',  NOW(), NOW()),
-  (@panthenol,   '판테놀 진정 토너',    '카밍코스메틱', 'SKIN_TONER',    'https://example.com/images/panthenol-toner.jpg','https://example.com/products/panthenol-toner',NOW(), NOW()),
-  (@panthenol,   '판테놀 크림',         '카밍코스메틱', 'CREAM',         'https://example.com/images/panthenol-cream.jpg','https://example.com/products/panthenol-cream',NOW(), NOW()),
-  (@centella,    '센텔라 진정 앰플',    '시카베이직',  'AMPOULE_SERUM', 'https://example.com/images/centella-amp.jpg',  'https://example.com/products/centella-amp',  NOW(), NOW()),
-  (@centella,    '센텔라 진정 크림',    '시카베이직',  'CREAM',         'https://example.com/images/centella-cream.jpg','https://example.com/products/centella-cream',NOW(), NOW()),
-  (@aloe,        '알로에 토너',         '퓨어네이처',  'SKIN_TONER',    'https://example.com/images/aloe-toner.jpg',    'https://example.com/products/aloe-toner',    NOW(), NOW()),
-  (@aloe,        '알로에 미스트',       '퓨어네이처',  'MIST_OIL',      'https://example.com/images/aloe-mist.jpg',     'https://example.com/products/aloe-mist',     NOW(), NOW()),
-  (@zincPca,     '징크 PCA 앰플',       '클리어스킨',  'AMPOULE_SERUM', 'https://example.com/images/zincpca-amp.jpg',   'https://example.com/products/zincpca-amp',   NOW(), NOW()),
-  (@zincPca,     '징크 PCA 미스트',     '클리어스킨',  'MIST_OIL',      'https://example.com/images/zincpca-mist.jpg',  'https://example.com/products/zincpca-mist',  NOW(), NOW());
+-- 3) product는 sql/products_seed.sql에서 실제 크롤링 데이터로 넣는다 (이 파일 다음에 실행)
 
 -- 4) Course A: 진행중 코스 (member 1) — "진행중" 분기 테스트용
 INSERT INTO course (member_id, procedure_id, course_type, routine_type_code, started_at, ended_at, status, created_at, updated_at)
