@@ -59,12 +59,12 @@ public class ProductRecommendationService {
             return collectIngredientIds(routines);
         }
 
-        List<Course> pastCourses = courseRepository.findByMemberIdOrderByStartedAtDesc(Member.DEFAULT_ID);
-        if (pastCourses.isEmpty()) {
+        Optional<Course> fallbackCourse = courseRepository.findFirstByMemberIdAndStatusOrderByEndedAtDesc(Member.DEFAULT_ID, CourseStatus.COMPLETED);
+        if (fallbackCourse.isEmpty()) {
             log.info("추천 성분 근거 - basis=NO_HISTORY, memberId={}", Member.DEFAULT_ID);
             return List.of();
         }
-        Long fallbackCourseId = pastCourses.get(0).getId();
+        Long fallbackCourseId = fallbackCourse.get().getId();
         List<Routine> routines = routineRepository.findByCourseIdOrderByRoutineDateDesc(fallbackCourseId);
         List<Routine> recentRoutines = routines.subList(0, Math.min(FALLBACK_ROUTINE_LIMIT, routines.size()));
         log.info("추천 성분 근거 - basis=FALLBACK_RECENT_ROUTINE, courseId={}, usedRoutineIds={}",
