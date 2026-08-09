@@ -11,4 +11,6 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     Optional<Course> findByMemberIdAndStatus(Long memberId, CourseStatus status);
 
     List<Course> findByMemberIdOrderByStartedAtDesc(Long memberId);
+
+    Optional<Course> findFirstByMemberIdAndStatusOrderByEndedAtDesc(Long memberId, CourseStatus status);
 }
