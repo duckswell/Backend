@@ -10,6 +10,7 @@ public interface RoutineStepIngredientRepository extends JpaRepository<RoutineSt
 
     @Query("select rsi.ingredientId from RoutineStepIngredient rsi "
             + "where rsi.routineStep.routine.id in :routineIds "
-            + "group by rsi.ingredientId order by count(rsi) desc")
+            + "group by rsi.ingredientId "
+            + "order by count(rsi) desc, max(rsi.routineStep.routine.routineDate) desc, rsi.ingredientId asc")
     List<Long> findIngredientIdsOrderByFrequencyDesc(@Param("routineIds") List<Long> routineIds);
 }
