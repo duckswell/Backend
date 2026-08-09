@@ -1,6 +1,9 @@
 -- 실제 크롤링한 상품 데이터 (paparecipe/107/DERMA42/Pith.)
 -- 선행 조건: sql/seed_shop_demo.sql을 먼저 실행해서 ingredient 데이터가 있어야 함
 -- 기존 더미 상품(example.com 링크)을 전부 지우고 이 데이터로 교체
+-- 중간에 INSERT가 실패해도 DELETE만 반영되는 일이 없도록 하나의 트랜잭션으로 실행
+
+START TRANSACTION;
 
 DELETE FROM product;
 
@@ -123,3 +126,5 @@ INSERT INTO product (ingredient_id, name, brand, category, image_url, link_url, 
 INSERT INTO product (ingredient_id, name, brand, category, image_url, link_url, created_at, updated_at) SELECT id, '[론칭 특가 30% OFF] 피쓰 판테티놀 선 에센스 30ml', 'Pith.', 'AMPOULE_SERUM', 'https://ecimg.cafe24img.com/pg1544b10317963036/amredcosmetic/web/product/big/20260306/0ba1237fc98f33829649e8ca7fcbc787.png', 'https://pithseoul.com/product/detail.html?product_no=37&cate_no=42&display_group=1', NOW(), NOW() FROM ingredient WHERE name = '판테놀';
 INSERT INTO product (ingredient_id, name, brand, category, image_url, link_url, created_at, updated_at) SELECT id, '피쓰 코어 리빌드 크림 50ml', 'Pith.', 'CREAM', 'https://ecimg.cafe24img.com/pg1544b10317963036/amredcosmetic/web/product/big/20251107/7fcc1cc815ab5ada53419b5b4775e7f6.png', 'https://pithseoul.com/product/detail.html?product_no=12&cate_no=42&display_group=1', NOW(), NOW() FROM ingredient WHERE name = '세라마이드';
 INSERT INTO product (ingredient_id, name, brand, category, image_url, link_url, created_at, updated_at) SELECT id, '피쓰 코어 리빌드 크림 15ml', 'Pith.', 'CREAM', 'https://ecimg.cafe24img.com/pg1544b10317963036/amredcosmetic/web/product/big/20251107/12d06e112cf8ee69429310a4062d1999.png', 'https://pithseoul.com/product/detail.html?product_no=11&cate_no=42&display_group=1', NOW(), NOW() FROM ingredient WHERE name = '세라마이드';
+
+COMMIT;
