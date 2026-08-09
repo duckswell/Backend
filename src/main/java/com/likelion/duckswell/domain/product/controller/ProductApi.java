@@ -1,8 +1,11 @@
 package com.likelion.duckswell.domain.product.controller;
 
 import com.likelion.duckswell.domain.product.dto.IngredientResponse;
+import com.likelion.duckswell.domain.product.dto.ProductResponse;
+import com.likelion.duckswell.domain.product.entity.ProductCategory;
 import com.likelion.duckswell.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
@@ -19,4 +22,16 @@ public interface ProductApi {
                     """
     )
     ResponseEntity<ApiResponse<List<IngredientResponse>>> getRecommendedIngredients();
+
+    @Operation(
+            summary = "추천 성분별 상품 목록 조회",
+            description = """
+                    1단계(추천 성분 목록)에서 선택한 성분(ingredientId)이 포함된 상품 목록을 반환합니다.
+                    productCategory를 지정하지 않으면 전체 상품카테고리를, 지정하면 해당 상품카테고리로만 필터링합니다.
+                    """
+    )
+    ResponseEntity<ApiResponse<List<ProductResponse>>> getProductsByIngredient(
+            @Parameter(description = "추천 성분 id", required = true) Long ingredientId,
+            @Parameter(description = "상품카테고리 필터 - 미지정 시 전체") ProductCategory productCategory
+    );
 }

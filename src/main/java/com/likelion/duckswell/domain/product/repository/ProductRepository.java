@@ -10,4 +10,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findByIngredientIdOrderByCreatedAtDesc(Long ingredientId);
 
     List<Product> findByCategory(ProductCategory category);
+
+    List<Product> findByIngredientIdAndCategoryOrderByCreatedAtDesc(Long ingredientId, ProductCategory category);
 }

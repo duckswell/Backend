@@ -7,6 +7,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @Slf4j
 @RestControllerAdvice
@@ -29,6 +30,13 @@ public class GlobalExceptionHandler {
         log.warn("MethodArgumentNotValidException: {}", message);
         return ResponseEntity.status(CommonErrorCode.INVALID_INPUT_VALUE.getStatus())
                 .body(ApiResponse.fail(CommonErrorCode.INVALID_INPUT_VALUE.getCode(), message));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
+        log.warn("MethodArgumentTypeMismatchException: {}", e.getMessage());
+        return ResponseEntity.status(CommonErrorCode.INVALID_INPUT_VALUE.getStatus())
+                .body(ApiResponse.fail(CommonErrorCode.INVALID_INPUT_VALUE.getCode(), CommonErrorCode.INVALID_INPUT_VALUE.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
