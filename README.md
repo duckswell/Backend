@@ -107,7 +107,7 @@
 ---
 
 ## 🗂️ ERD
-추가 예정
+[![duckswell.png](https://i.postimg.cc/jjgjZRnk/duckswell.png)](https://postimg.cc/xkmYdDRK)
 
 ---
 
