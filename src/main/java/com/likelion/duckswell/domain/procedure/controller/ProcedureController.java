@@ -33,6 +33,12 @@ public class ProcedureController implements ProcedureApi {
     }
 
     @Override
+    @GetMapping("/{procedureId}")
+    public ResponseEntity<ApiResponse<ProcedureResponse>> getProcedure(@PathVariable Long procedureId) {
+        return ResponseEntity.ok(ApiResponse.success(procedureService.getProcedure(procedureId)));
+    }
+
+    @Override
     @PostMapping
     public ResponseEntity<ApiResponse<List<ProcedureResponse>>> registerProcedures(@RequestBody @Valid ProcedureRegisterRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(procedureService.registerProcedures(request)));
