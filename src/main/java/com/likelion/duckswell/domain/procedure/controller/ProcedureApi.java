@@ -23,6 +23,16 @@ public interface ProcedureApi {
     ResponseEntity<ApiResponse<List<ProcedureResponse>>> getMyProcedures();
 
     @Operation(
+            summary = "시술 정보 단건 조회",
+            description = "시술 정보 하나를 id로 조회합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "시술 정보 단건 조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "존재하지 않거나 내 소유가 아닌 시술 정보")
+    })
+    ResponseEntity<ApiResponse<ProcedureResponse>> getProcedure(Long procedureId);
+
+    @Operation(
             summary = "시술 정보 등록",
             description = """
                     시술 정보(종류/일자/횟수/부위)를 한 번에 여러 건 등록합니다.

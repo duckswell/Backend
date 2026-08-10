@@ -26,6 +26,10 @@ public class ProcedureService {
                 .toList();
     }
 
+    public ProcedureResponse getProcedure(Long procedureId) {
+        return ProcedureResponse.from(getOwnedProcedure(procedureId));
+    }
+
     @Transactional
     public List<ProcedureResponse> registerProcedures(ProcedureRegisterRequest request) {
         return request.procedures().stream()
