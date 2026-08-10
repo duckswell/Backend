@@ -43,3 +43,6 @@ CLAUDE.md
 
 ### Local secrets (never pushed to GitHub) ###
 application-local.yml
+
+### 사용자 업로드 사진 (개인정보, 로컬 개발용 더미 데이터) ###
+/uploads/
