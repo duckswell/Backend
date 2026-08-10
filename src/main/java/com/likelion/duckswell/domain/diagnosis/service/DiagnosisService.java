@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -43,8 +44,11 @@ public class DiagnosisService {
     private final CvAnalysisClient cvAnalysisClient;
     private final LlmDiagnosisClient llmDiagnosisClient;
 
-    /** 사진은 여기서 딱 한 번 업로드/저장되고 품질을 확인한다. 통과한 photoId를 제출 시점에 재사용한다. */
-    @Transactional
+    /**
+     * 사진은 여기서 딱 한 번 업로드/저장되고 품질을 확인한다. 통과한 photoId를 제출 시점에 재사용한다.
+     * DB 쓰기가 없는데도 클래스 기본값(readOnly 트랜잭션)에 걸리지 않도록 명시적으로 트랜잭션 밖에서 실행한다.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public PhotoCheckResponse checkPhoto(MultipartFile photo) {
         String photoId = photoStorage.save(photo);
         PhotoQualityResult quality = cvAnalysisClient.checkPhotoQuality(photoStorage.resolvePath(photoId));
@@ -55,7 +59,12 @@ public class DiagnosisService {
         return new PhotoCheckResponse(photoId);
     }
 
-    @Transactional
+    /**
+     * CV 서브프로세스(최대 30초)와 LLM 호출이 끝날 때까지 DB 커넥션을 붙잡고 있지 않도록,
+     * 외부 호출 구간은 트랜잭션 밖에서 실행한다. 이후 루틴 생성/진단 저장은 각 저장소 호출이
+     * 자체적으로 트랜잭션을 여닫는다(RoutineService, JpaRepository 모두 자체 @Transactional 보유).
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public DiagnosisResponse submitDiagnosis(DiagnosisSubmitRequest request) {
         CourseResponse course = courseService.getCourse(request.courseId());
         boolean hasPhoto = request.photoId() != null;
@@ -67,23 +76,31 @@ public class DiagnosisService {
         // photoId는 checkPhoto()에서 이미 품질 검증을 통과한 사진이라 여기서 다시 확인하지 않는다.
         String photoPath = null;
         CvScoreResult scores = null;
-        if (hasPhoto) {
-            photoPath = photoStorage.resolvePath(request.photoId());
-            scores = cvAnalysisClient.analyze(photoPath);
+        LlmDiagnosisResult llmResult;
+        try {
+            if (hasPhoto) {
+                photoPath = photoStorage.resolvePath(request.photoId());
+                scores = cvAnalysisClient.analyze(photoPath);
+            }
+
+            LlmDiagnosisContext context = new LlmDiagnosisContext(
+                    photoPath,
+                    request.symptoms(),
+                    request.symptomNote(),
+                    scores,
+                    buildYesterdayContext(request.courseId()),
+                    procedureService.getMyProcedures()
+            );
+            llmResult = llmDiagnosisClient.analyze(context);
+        } finally {
+            // S3처럼 resolvePath()가 로컬에 임시 파일을 만든 구현체만 실제로 지운다(로컬 저장소는 no-op).
+            if (photoPath != null) {
+                photoStorage.cleanupResolvedPath(photoPath);
+            }
         }
 
         RoutineSnapshot routine = routineService.createTodayRoutine(
                 request.courseId(), photoPath, request.symptomNote(), request.symptoms());
-
-        LlmDiagnosisContext context = new LlmDiagnosisContext(
-                photoPath,
-                request.symptoms(),
-                request.symptomNote(),
-                scores,
-                buildYesterdayContext(request.courseId()),
-                procedureService.getMyProcedures()
-        );
-        LlmDiagnosisResult llmResult = llmDiagnosisClient.analyze(context);
 
         Diagnosis diagnosis = new Diagnosis(
                 routine.id(),

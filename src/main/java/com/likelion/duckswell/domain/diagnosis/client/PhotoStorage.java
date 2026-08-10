@@ -19,4 +19,11 @@ public interface PhotoStorage {
 
     /** 품질 체크에서 탈락한 사진 등, 더 이상 필요 없는 파일을 지운다. */
     void delete(String photoId);
+
+    /**
+     * resolvePath()가 CV 분석용으로 임시 파일을 만들었다면(S3 등) 사용이 끝난 뒤 정리한다.
+     * 로컬처럼 원본 저장 경로를 그대로 반환하는 구현체는 지울 필요가 없어 기본값은 아무 동작도 하지 않는다.
+     */
+    default void cleanupResolvedPath(String resolvedPath) {
+    }
 }

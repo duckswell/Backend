@@ -3,8 +3,10 @@ package com.likelion.duckswell.domain.diagnosis.client;
 import com.likelion.duckswell.domain.diagnosis.exception.DiagnosisErrorCode;
 import com.likelion.duckswell.global.exception.CustomException;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -27,6 +29,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
  * 로컬 임시 파일로 내려받은 뒤 그 경로를 돌려준다.
  * CV 서브프로세스 호출 전 필요한 다운로드 단계.
  */
+@Slf4j
 @Profile("prod")
 @Component
 public class S3PhotoStorage implements PhotoStorage {
@@ -64,8 +67,9 @@ public class S3PhotoStorage implements PhotoStorage {
     public String resolvePath(String photoId) {
         // 미리 빈 파일을 만들어두면 SDK가 "이미 존재하는 파일"로 보고 실패할 수 있어서,
         // 경로만 만들고 실제 파일 생성은 getObject()가 하게 둔다.
+        // 다운로드된 임시 파일은 사용이 끝나면 cleanupResolvedPath()로 지운다(여기서 deleteOnExit로
+        // 미루면 장기 실행 서버에서 요청마다 임시 파일이 계속 쌓인다).
         Path tempFile = Path.of(System.getProperty("java.io.tmpdir"), "diagnosis-photo-" + UUID.randomUUID() + suffixOf(photoId));
-        tempFile.toFile().deleteOnExit();
 
         try {
             s3Client.getObject(GetObjectRequest.builder().bucket(bucket).key(photoId).build(), tempFile);
@@ -78,6 +82,15 @@ public class S3PhotoStorage implements PhotoStorage {
     @Override
     public void delete(String photoId) {
         s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(photoId).build());
+    }
+
+    @Override
+    public void cleanupResolvedPath(String resolvedPath) {
+        try {
+            Files.deleteIfExists(Path.of(resolvedPath));
+        } catch (IOException e) {
+            log.warn("임시 파일 삭제 실패: {}", resolvedPath, e);
+        }
     }
 
     private String suffixOf(String photoId) {
