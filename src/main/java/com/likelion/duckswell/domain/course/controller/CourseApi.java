@@ -2,6 +2,7 @@ package com.likelion.duckswell.domain.course.controller;
 
 import com.likelion.duckswell.domain.course.dto.CourseResponse;
 import com.likelion.duckswell.domain.course.dto.CourseStartRequest;
+import com.likelion.duckswell.domain.course.dto.CurrentCourseResponse;
 import com.likelion.duckswell.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -47,4 +48,18 @@ public interface CourseApi {
             description = "마이페이지에서 보여줄, 시작~종료일 기준 지난 코스 목록을 최신순으로 반환합니다."
     )
     ResponseEntity<ApiResponse<List<CourseResponse>>> getCourseHistory();
+
+    @Operation(
+            summary = "현재 진행중인 코스 상태 조회",
+            description = """
+                    현재 진행중인 코스와 연속 진행일수(streakDays)를 반환합니다.
+                    집중 코스는 label이 "집중코스"로 고정되고, 데일리 코스는 routineType 이름
+                    (예: 수분 보충 케어, 피지 조절 케어)이 label로 내려갑니다.
+
+                    연속일수는 오늘 루틴을 아직 완료하지 않았어도 스트릭이 끊기지 않고(어제까지 기준으로 셈),
+                    루틴을 완료하지 않은 날을 만나면 그 지점에서 끊깁니다.
+                    진행중인 코스가 없으면 data 없이 응답합니다.
+                    """
+    )
+    ResponseEntity<ApiResponse<CurrentCourseResponse>> getCurrentCourse();
 }

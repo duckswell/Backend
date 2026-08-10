@@ -2,6 +2,7 @@ package com.likelion.duckswell.domain.course.controller;
 
 import com.likelion.duckswell.domain.course.dto.CourseResponse;
 import com.likelion.duckswell.domain.course.dto.CourseStartRequest;
+import com.likelion.duckswell.domain.course.dto.CurrentCourseResponse;
 import com.likelion.duckswell.domain.course.service.CourseService;
 import com.likelion.duckswell.global.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -44,5 +45,11 @@ public class CourseController implements CourseApi {
     @GetMapping("/history")
     public ResponseEntity<ApiResponse<List<CourseResponse>>> getCourseHistory() {
         return ResponseEntity.ok(ApiResponse.success(courseService.getCourseHistory()));
+    }
+
+    @Override
+    @GetMapping("/current")
+    public ResponseEntity<ApiResponse<CurrentCourseResponse>> getCurrentCourse() {
+        return ResponseEntity.ok(ApiResponse.success(courseService.getCurrentCourse().orElse(null)));
     }
 }
