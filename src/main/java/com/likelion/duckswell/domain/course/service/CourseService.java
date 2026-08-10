@@ -60,7 +60,7 @@ public class CourseService {
     }
 
     public List<CourseResponse> getCourseHistory() {
-        return courseRepository.findByMemberIdOrderByStartedAtDesc(Member.DEFAULT_ID).stream()
+        return courseRepository.findByMemberIdOrderByStartedAtDescIdDesc(Member.DEFAULT_ID).stream()
                 .map(CourseResponse::from)
                 .toList();
     }
