@@ -9,6 +9,7 @@ import com.likelion.duckswell.domain.procedure.dto.ProcedureResponse;
 import com.likelion.duckswell.domain.routine.entity.Symptom;
 import com.likelion.duckswell.global.exception.CustomException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -36,6 +37,7 @@ import org.springframework.stereotype.Component;
 public class LlmDiagnosisClient {
 
     private static final String CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions";
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(60);
 
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(15))
@@ -70,6 +72,7 @@ public class LlmDiagnosisClient {
                     .uri(URI.create(CHAT_COMPLETIONS_URL))
                     .header("Authorization", "Bearer " + apiKey)
                     .header("Content-Type", "application/json; charset=utf-8")
+                    .timeout(REQUEST_TIMEOUT)
                     .POST(HttpRequest.BodyPublishers.ofByteArray(requestBytes))
                     .build();
             HttpResponse<byte[]> httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
@@ -309,8 +312,8 @@ public class LlmDiagnosisClient {
     }
 
     private String loadSystemPrompt() {
-        try {
-            return new String(new ClassPathResource("prompts/diagnosis-analysis-system.txt").getInputStream().readAllBytes());
+        try (InputStream in = new ClassPathResource("prompts/diagnosis-analysis-system.txt").getInputStream()) {
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
