@@ -65,6 +65,11 @@ public class CourseService {
                 .toList();
     }
 
+    /** 다른 도메인(diagnosis 등)이 courseId만으로 코스 정보를 참조해야 할 때 쓰는 조회용 메서드. */
+    public CourseResponse getCourse(Long courseId) {
+        return CourseResponse.from(getCourseOrThrow(courseId));
+    }
+
     private RoutineType resolveRoutineTypeForStart(CourseType courseType, RoutineTypeCode routineTypeCode) {
         if (courseType == CourseType.FOCUS) {
             if (routineTypeCode != null) {
