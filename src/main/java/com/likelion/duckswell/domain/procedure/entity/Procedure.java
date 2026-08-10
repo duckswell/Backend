@@ -58,4 +58,12 @@ public class Procedure extends BaseEntity {
         this.currentCount = currentCount;
         this.totalCount = totalCount;
     }
+
+    public void update(String procedureType, LocalDate procedureDate, Integer currentCount, Integer totalCount, List<ProcedureAreaType> areaTypes) {
+        this.procedureType = procedureType;
+        this.procedureDate = procedureDate;
+        updateCounts(currentCount, totalCount);
+        this.areas.clear();
+        areaTypes.forEach(this::addArea);
+    }
 }

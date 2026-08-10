@@ -1,5 +1,6 @@
 package com.likelion.duckswell.domain.procedure.controller;
 
+import com.likelion.duckswell.domain.procedure.dto.ProcedureItemRequest;
 import com.likelion.duckswell.domain.procedure.dto.ProcedureRegisterRequest;
 import com.likelion.duckswell.domain.procedure.dto.ProcedureResponse;
 import com.likelion.duckswell.global.response.ApiResponse;
@@ -34,4 +35,25 @@ public interface ProcedureApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "요청 값 검증 실패 (필수값 누락, 시술 부위 미지정 등)")
     })
     ResponseEntity<ApiResponse<List<ProcedureResponse>>> registerProcedures(ProcedureRegisterRequest request);
+
+    @Operation(
+            summary = "시술 정보 수정",
+            description = "시술 정보(종류/일자/횟수/부위)를 전체 교체 방식으로 수정합니다. 등록 때와 동일한 필드 검증이 적용됩니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "시술 정보 수정 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "요청 값 검증 실패 (필수값 누락, 시술 부위 미지정 등)"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "존재하지 않거나 내 소유가 아닌 시술 정보")
+    })
+    ResponseEntity<ApiResponse<ProcedureResponse>> updateProcedure(Long procedureId, ProcedureItemRequest request);
+
+    @Operation(
+            summary = "시술 정보 삭제",
+            description = "시술 정보를 삭제합니다. 등록된 시술 부위도 함께 삭제됩니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "시술 정보 삭제 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "존재하지 않거나 내 소유가 아닌 시술 정보")
+    })
+    ResponseEntity<ApiResponse<Void>> deleteProcedure(Long procedureId);
 }

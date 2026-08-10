@@ -5,7 +5,9 @@ import com.likelion.duckswell.domain.procedure.dto.ProcedureItemRequest;
 import com.likelion.duckswell.domain.procedure.dto.ProcedureRegisterRequest;
 import com.likelion.duckswell.domain.procedure.dto.ProcedureResponse;
 import com.likelion.duckswell.domain.procedure.entity.Procedure;
+import com.likelion.duckswell.domain.procedure.exception.ProcedureErrorCode;
 import com.likelion.duckswell.domain.procedure.repository.ProcedureRepository;
+import com.likelion.duckswell.global.exception.CustomException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,5 +38,22 @@ public class ProcedureService {
         Procedure procedure = new Procedure(Member.DEFAULT_ID, item.procedureType(), item.procedureDate(), item.currentCount(), item.totalCount());
         item.areas().forEach(procedure::addArea);
         return procedureRepository.save(procedure);
+    }
+
+    @Transactional
+    public ProcedureResponse updateProcedure(Long procedureId, ProcedureItemRequest request) {
+        Procedure procedure = getOwnedProcedure(procedureId);
+        procedure.update(request.procedureType(), request.procedureDate(), request.currentCount(), request.totalCount(), request.areas());
+        return ProcedureResponse.from(procedure);
+    }
+
+    @Transactional
+    public void deleteProcedure(Long procedureId) {
+        procedureRepository.delete(getOwnedProcedure(procedureId));
+    }
+
+    private Procedure getOwnedProcedure(Long procedureId) {
+        return procedureRepository.findByIdAndMemberId(procedureId, Member.DEFAULT_ID)
+                .orElseThrow(() -> new CustomException(ProcedureErrorCode.PROCEDURE_NOT_FOUND));
     }
 }
