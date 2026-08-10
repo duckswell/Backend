@@ -25,7 +25,7 @@ public record ProcedureItemRequest(
         Integer totalCount,
 
         @NotEmpty(message = "시술 부위는 최소 1개 이상이어야 합니다.")
-        List<ProcedureAreaType> areas
+        List<@NotNull(message = "시술 부위 값은 비어있을 수 없습니다.") ProcedureAreaType> areas
 ) {
     @AssertTrue(message = "현재 회차는 총 회차를 초과할 수 없습니다.")
     public boolean isCurrentCountValid() {
