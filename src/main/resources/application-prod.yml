@@ -1,0 +1,36 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+openai:
+  api-key: ${OPENAI_API_KEY}
+  model: gpt-4o-mini
+
+aws:
+  region: ap-northeast-2
+  s3:
+    bucket: duckswell
+
+# [배포 서버에 필요한 사전 작업 - AI 사진 분석 기능]
+# 요 기능 좀만 신경 써주시면 감사하겠습니다!
+#
+# 1. Python 환경 설치: Python 3.11(또는 duckswellAI 개발 시 쓴 버전) + venv 생성 후
+#    duckswellAI/requirements.txt 패키지 설치 (opencv-python, mediapipe==0.10.14,
+#    scikit-image, numpy)
+# 2. 파일 복사 (duckswellAI 레포 전체 아니고 아래 3개 폴더/파일만 복사해주시면 됩니다):
+#    src/features/, scripts/analyze.py, scripts/check_photo.py, models_export.json
+#    (dataset/ 폴더는 학습용이라 불필요합니당)
+# 3. 아래 두 환경변수에 위에서 설치/복사한 실제 경로를 지정:
+#    DUCKSWELL_AI_PYTHON_PATH = venv의 python 실행파일 경로 (리눅스면 보통 .../venv/bin/python)
+#    DUCKSWELL_AI_SCRIPTS_PATH = 위에서 복사해둔 scripts 폴더 경로
+duckswell-ai:
+  python-path: ${DUCKSWELL_AI_PYTHON_PATH:}
+  scripts-path: ${DUCKSWELL_AI_SCRIPTS_PATH:}
