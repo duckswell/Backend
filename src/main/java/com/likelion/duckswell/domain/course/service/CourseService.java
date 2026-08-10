@@ -16,7 +16,9 @@ import com.likelion.duckswell.domain.routine.entity.Routine;
 import com.likelion.duckswell.domain.routine.repository.RoutineRepository;
 import com.likelion.duckswell.global.exception.CustomException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -78,8 +80,9 @@ public class CourseService {
 
     private int calculateStreakDays(Long courseId) {
         Set<LocalDate> completedDates = routineRepository.findByCourseIdOrderByRoutineDateDesc(courseId).stream()
-                .filter(routine -> routine.getCompletedAt() != null)
-                .map(Routine::getRoutineDate)
+                .map(Routine::getCompletedAt)
+                .filter(Objects::nonNull)
+                .map(LocalDateTime::toLocalDate)
                 .collect(Collectors.toSet());
 
         LocalDate cursor = LocalDate.now();
