@@ -13,11 +13,18 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class ProcedureService {
 
     private final ProcedureRepository procedureRepository;
 
+    public List<ProcedureResponse> getMyProcedures() {
+        return procedureRepository.findByMemberIdOrderByProcedureDateDesc(Member.DEFAULT_ID).stream()
+                .map(ProcedureResponse::from)
+                .toList();
+    }
+
+    @Transactional
     public List<ProcedureResponse> registerProcedures(ProcedureRegisterRequest request) {
         return request.procedures().stream()
                 .map(this::save)
