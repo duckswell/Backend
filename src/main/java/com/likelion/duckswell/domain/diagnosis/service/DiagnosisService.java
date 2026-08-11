@@ -62,16 +62,23 @@ public class DiagnosisService {
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public PhotoCheckResponse checkPhoto(MultipartFile photo) {
         String photoId = photoStorage.save(photo);
-        String resolvedPath = photoStorage.resolvePath(photoId);
+        String resolvedPath = null;
+        boolean accepted = false;
         try {
+            resolvedPath = photoStorage.resolvePath(photoId);
             PhotoQualityResult quality = cvAnalysisClient.checkPhotoQuality(resolvedPath);
             if (!quality.ok()) {
-                photoStorage.delete(photoId);
                 throw new CustomException(mapQualityReason(quality.reason()));
             }
+            accepted = true;
             return new PhotoCheckResponse(photoId);
         } finally {
-            photoStorage.cleanupResolvedPath(resolvedPath);
+            if (resolvedPath != null) {
+                photoStorage.cleanupResolvedPath(resolvedPath);
+            }
+            if (!accepted) {
+                photoStorage.delete(photoId);
+            }
         }
     }
 
@@ -166,7 +173,7 @@ public class DiagnosisService {
         LlmRoutineCompletionContext context = new LlmRoutineCompletionContext(
                 course.courseType(),
                 course.routineTypeName(),
-                course.courseType() == CourseType.DAILY ? courseService.getStreakDays(routine.courseId()) : null,
+                course.courseType() == CourseType.DAILY ? courseService.getStreakDaysIncludingToday(routine.courseId()) : null,
                 completedSteps
         );
         LlmRoutineCompletionResult result = llmRoutineCompletionClient.summarize(context);

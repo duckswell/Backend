@@ -80,20 +80,31 @@ public class CourseService {
 
     public Optional<CurrentCourseResponse> getCurrentCourse() {
         return courseRepository.findByMemberIdAndStatus(Member.DEFAULT_ID, CourseStatus.IN_PROGRESS)
-                .map(course -> CurrentCourseResponse.of(course, calculateStreakDays(course.getId())));
+                .map(course -> CurrentCourseResponse.of(course, calculateStreakDays(course.getId(), false)));
     }
 
     /** 다른 도메인(routine 등)이 courseId만으로 연속 지속일을 참조해야 할 때 쓰는 조회용 메서드. */
     public int getStreakDays(Long courseId) {
-        return calculateStreakDays(courseId);
+        return calculateStreakDays(courseId, false);
     }
 
-    private int calculateStreakDays(Long courseId) {
+    /**
+     * 오늘 루틴을 지금 막 완료하는 시점(completedAt이 아직 저장되기 전)에 쓰는 조회용 메서드.
+     * 오늘도 완료된 것으로 간주하고 계산해야 정확한 연속일수가 나온다.
+     */
+    public int getStreakDaysIncludingToday(Long courseId) {
+        return calculateStreakDays(courseId, true);
+    }
+
+    private int calculateStreakDays(Long courseId, boolean assumeTodayCompleted) {
         Set<LocalDate> completedDates = routineRepository.findByCourseIdOrderByRoutineDateDesc(courseId).stream()
                 .map(Routine::getCompletedAt)
                 .filter(Objects::nonNull)
                 .map(LocalDateTime::toLocalDate)
                 .collect(Collectors.toSet());
+        if (assumeTodayCompleted) {
+            completedDates.add(LocalDate.now());
+        }
 
         LocalDate cursor = LocalDate.now();
         if (!completedDates.contains(cursor)) {
