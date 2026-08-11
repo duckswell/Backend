@@ -21,6 +21,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -357,26 +358,42 @@ public class LlmRoutineStepsClient {
             List<Long> validIds = resolveValidIds(ingredient_ids, namesById);
             List<String> names = validIds.stream().map(namesById::get).toList();
             String productText = buildProductText(names, product_type);
-            String alternateText = buildAlternateText(names, alternate_ingredient_name);
+            String alternateText = buildAlternateText(names, alternate_ingredient_name, namesById.values());
             return new LlmRoutineStepsResult.StepResult(
                     step_name, ProductCategory.valueOf(category), productText, method_text, alternateText, validIds);
         }
 
-        private String buildAlternateText(List<String> primaryNames, String altName) {
+        /**
+         * alternateText는 클렌징 제외 항상 채워진다는 게 문서화된 계약이라(RoutineApi, 프롬프트
+         * 둘 다 "항상 채워짐" 명시) 원래 성분과 겹칠 때 그냥 null로 비우면 계약을 어기게 된다.
+         * 대신 성분 후보군(candidatePool) 중 원래 성분과 안 겹치는 다른 이름으로 대체한다 -
+         * 후보군이 8개라 이 스텝의 원래 성분(보통 1~2개)과 전부 겹칠 일은 사실상 없다.
+         */
+        private String buildAlternateText(List<String> primaryNames, String altName, Collection<String> candidatePool) {
             if (altName == null || altName.isBlank() || primaryNames.isEmpty()) {
                 return null;
             }
             // alternate_ingredient_name은 자유 문자열이라 JSON 스키마로 ingredient_ids와의 중복을
             // 막을 수 없다 - LLM이 "센텔라가 없다면 센텔라를 사용해요"처럼 같은 성분을 대체
-            // 성분으로 반환하면(프롬프트 위반) 문구 자체를 만들지 않고 건너뛴다.
-            boolean altSameAsPrimary = primaryNames.stream().anyMatch(name -> name.equalsIgnoreCase(altName.trim()));
-            if (altSameAsPrimary) {
-                return null;
+            // 성분으로 반환하면(프롬프트 위반) 후보군에서 겹치지 않는 다른 이름으로 대신한다.
+            String resolvedAltName = altName.trim();
+            if (containsIgnoreCase(primaryNames, resolvedAltName)) {
+                resolvedAltName = candidatePool.stream()
+                        .filter(name -> !containsIgnoreCase(primaryNames, name))
+                        .findFirst()
+                        .orElse(null);
+                if (resolvedAltName == null) {
+                    return null;
+                }
             }
             String joined = String.join("·", primaryNames);
             String lastPrimary = primaryNames.get(primaryNames.size() - 1);
             return "%s%s 없다면 %s%s 사용해요".formatted(
-                    joined, particle(lastPrimary, "이", "가"), altName, particle(altName, "을", "를"));
+                    joined, particle(lastPrimary, "이", "가"), resolvedAltName, particle(resolvedAltName, "을", "를"));
+        }
+
+        private static boolean containsIgnoreCase(List<String> names, String target) {
+            return names.stream().anyMatch(name -> name.equalsIgnoreCase(target));
         }
 
         private String particle(String word, String withBatchim, String withoutBatchim) {

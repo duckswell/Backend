@@ -301,27 +301,32 @@ class CourseServiceTest {
 
     @Test
     void 성분마다_제품을_하나씩_상한없이_뽑는다() {
-        // given
+        // given: 후보 4개 - 예전 3개 상한이 남아있었다면 이 테스트가 실패해야 진짜로 "상한 없음"이 검증된다
         Ingredient niacinamide = ingredientRepository.save(new Ingredient("나이아신아마이드", IngredientCategory.VITAMIN, "미백 성분"));
         Ingredient panthenol = ingredientRepository.save(new Ingredient("판테놀", IngredientCategory.MOISTURE, "보습 성분"));
         Ingredient centella = ingredientRepository.save(new Ingredient("센텔라", IngredientCategory.PLANT_EXTRACT, "진정 성분"));
+        Ingredient ceramide = ingredientRepository.save(new Ingredient("세라마이드", IngredientCategory.MOISTURE, "장벽 성분"));
         Product niacinamideSerum = productRepository.save(
                 new Product(niacinamide, "나이아신아마이드 세럼", "브랜드A", ProductCategory.AMPOULE_SERUM, null, null));
         Product panthenolCream = productRepository.save(
                 new Product(panthenol, "판테놀 크림", "브랜드B", ProductCategory.CREAM, null, null));
         Product centellaCream = productRepository.save(
                 new Product(centella, "센텔라 크림", "브랜드C", ProductCategory.CREAM, null, null));
+        Product ceramideCream = productRepository.save(
+                new Product(ceramide, "세라마이드 크림", "브랜드D", ProductCategory.CREAM, null, null));
         entityManager.flush();
 
-        // when: 후보 3개(3개 상한이 있었다면 걸렸을 개수)
+        // when
         List<RecommendedProductResponse> recommended = courseService.pickRecommendedProducts(List.of(
                 new CourseService.ProductPickCandidate(niacinamide.getId(), null),
                 new CourseService.ProductPickCandidate(panthenol.getId(), null),
-                new CourseService.ProductPickCandidate(centella.getId(), null)));
+                new CourseService.ProductPickCandidate(centella.getId(), null),
+                new CourseService.ProductPickCandidate(ceramide.getId(), null)));
 
         // then
         assertThat(recommended).extracting(r -> r.product().id())
-                .containsExactlyInAnyOrder(niacinamideSerum.getId(), panthenolCream.getId(), centellaCream.getId());
+                .containsExactlyInAnyOrder(
+                        niacinamideSerum.getId(), panthenolCream.getId(), centellaCream.getId(), ceramideCream.getId());
     }
 
     private void seedRoutineType(RoutineTypeCode code) {

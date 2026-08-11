@@ -86,11 +86,15 @@ class RoutineServiceTest {
 
     @Test
     void 루틴_완료_기준_추천제품이_클렌저를_제외하고_성분당_1개씩_상한없이_뽑힌다() {
-        // given
+        // given: 활성 스텝 4개 - 예전 3개 상한이 남아있었다면 이 테스트가 실패해야 진짜로 "상한 없음"이 검증된다
         Ingredient centella = ingredientRepository.save(new Ingredient("센텔라", IngredientCategory.PLANT_EXTRACT, "진정 성분"));
         Ingredient panthenol = ingredientRepository.save(new Ingredient("판테놀", IngredientCategory.MOISTURE, "보습 성분"));
+        Ingredient hyaluronic = ingredientRepository.save(new Ingredient("히알루론산", IngredientCategory.MOISTURE, "수분 성분"));
+        Ingredient niacinamide = ingredientRepository.save(new Ingredient("나이아신아마이드", IngredientCategory.VITAMIN, "미백 성분"));
         Product cream = productRepository.save(new Product(centella, "센텔라 크림", "브랜드A", ProductCategory.CREAM, null, null));
         Product serum = productRepository.save(new Product(panthenol, "판테놀 세럼", "브랜드B", ProductCategory.AMPOULE_SERUM, null, null));
+        Product toner = productRepository.save(new Product(hyaluronic, "히알루론산 토너", "브랜드C", ProductCategory.SKIN_TONER, null, null));
+        Product mist = productRepository.save(new Product(niacinamide, "나이아신아마이드 미스트", "브랜드D", ProductCategory.MIST_OIL, null, null));
 
         Routine routine = new Routine(DUMMY_COURSE_ID, LocalDate.now(), null, null);
         routine.addStep(1, "클렌징", ProductCategory.CLEANSER, null, null, null); // 성분 없음 - 결과에 영향 없어야 함
@@ -98,16 +102,21 @@ class RoutineServiceTest {
         creamStep.addIngredient(centella.getId(), IngredientRole.PRIMARY);
         RoutineStep serumStep = routine.addStep(3, "보습 세럼", ProductCategory.AMPOULE_SERUM, null, null, null);
         serumStep.addIngredient(panthenol.getId(), IngredientRole.PRIMARY);
+        RoutineStep tonerStep = routine.addStep(4, "수분 토너", ProductCategory.SKIN_TONER, null, null, null);
+        tonerStep.addIngredient(hyaluronic.getId(), IngredientRole.PRIMARY);
+        RoutineStep mistStep = routine.addStep(5, "미백 미스트", ProductCategory.MIST_OIL, null, null, null);
+        mistStep.addIngredient(niacinamide.getId(), IngredientRole.PRIMARY);
         routineRepository.save(routine);
         entityManager.flush();
 
         // when
         List<RecommendedProductResponse> recommended = routineService.getRecommendedProducts(routine.getId());
 
-        // then: 클렌징 스텝은 성분이 없어 자연히 빠지고, 나머지 두 성분 각각 제품 1개씩(3개 상한 없음)
-        assertThat(recommended).hasSize(2);
-        assertThat(recommended).extracting(r -> r.product().id()).containsExactlyInAnyOrder(cream.getId(), serum.getId());
+        // then: 클렌징 스텝은 성분이 없어 자연히 빠지고, 나머지 네 성분 각각 제품 1개씩(3개 상한 없음)
+        assertThat(recommended).hasSize(4);
+        assertThat(recommended).extracting(r -> r.product().id())
+                .containsExactlyInAnyOrder(cream.getId(), serum.getId(), toner.getId(), mist.getId());
         assertThat(recommended).extracting(RecommendedProductResponse::ingredientName)
-                .containsExactlyInAnyOrder("센텔라", "판테놀");
+                .containsExactlyInAnyOrder("센텔라", "판테놀", "히알루론산", "나이아신아마이드");
     }
 }

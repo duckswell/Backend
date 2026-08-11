@@ -70,9 +70,9 @@ public interface CourseApi {
             description = """
                     최근 7일(오늘 포함)간 기록된 증상 중 가장 많이 선택된 키워드 상위 2개(topSymptoms)와,
                     그 증상들을 근거로 추천하는 데일리 루틴 타입(recommendedRoutineTypeCode/Name)을
-                    함께 반환합니다(추천만 하며 자동으로 코스를 시작하지는 않습니다 .
-                    (실제 시작은 별도 POST /courses/start 호출.)
-                    
+                    함께 반환합니다(추천만 하며 자동으로 코스를 시작하지는 않습니다. 실제 시작은
+                    별도 POST /courses/start 호출).
+
                     최근 7일 증상 기록이 없으면 topSymptoms는 빈 리스트, 추천 필드는 둘 다 null입니다.
                     """
     )
