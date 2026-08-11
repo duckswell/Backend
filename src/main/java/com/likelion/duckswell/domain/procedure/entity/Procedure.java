@@ -4,6 +4,8 @@ import com.likelion.duckswell.global.entity.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -29,8 +31,9 @@ public class Procedure extends BaseEntity {
     @Column(name = "member_id", nullable = false)
     private Long memberId;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    private String procedureType;
+    private ProcedureType procedureType;
 
     @Column(nullable = false)
     private LocalDate procedureDate;
@@ -42,7 +45,7 @@ public class Procedure extends BaseEntity {
     @OneToMany(mappedBy = "procedure", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProcedureArea> areas = new ArrayList<>();
 
-    public Procedure(Long memberId, String procedureType, LocalDate procedureDate, Integer currentCount, Integer totalCount) {
+    public Procedure(Long memberId, ProcedureType procedureType, LocalDate procedureDate, Integer currentCount, Integer totalCount) {
         this.memberId = memberId;
         this.procedureType = procedureType;
         this.procedureDate = procedureDate;
@@ -59,7 +62,7 @@ public class Procedure extends BaseEntity {
         this.totalCount = totalCount;
     }
 
-    public void update(String procedureType, LocalDate procedureDate, Integer currentCount, Integer totalCount, List<ProcedureAreaType> areaTypes) {
+    public void update(ProcedureType procedureType, LocalDate procedureDate, Integer currentCount, Integer totalCount, List<ProcedureAreaType> areaTypes) {
         this.procedureType = procedureType;
         this.procedureDate = procedureDate;
         updateCounts(currentCount, totalCount);
