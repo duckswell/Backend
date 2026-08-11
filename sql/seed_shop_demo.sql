@@ -45,6 +45,13 @@ INSERT INTO ingredient_tag (ingredient_id, tag) VALUES
   (@aloe, '진정'), (@aloe, '수분 공급'), (@aloe, '쿨링'),
   (@zincPca, '피지 조절'), (@zincPca, '번들거림 완화'), (@zincPca, '피부 청결');
 
+-- 2-2) routine_type_ingredient (관리 타입별 고정 추천 성분 후보군 - LLM 성분 grounding용)
+INSERT INTO routine_type_ingredient (routine_type_code, ingredient_id) VALUES
+  ('COOLDOWN', @centella), ('COOLDOWN', @panthenol), ('COOLDOWN', @aloe),
+  ('CLEAR_UP', @niacinamide), ('CLEAR_UP', @zincPca), ('CLEAR_UP', @centella),
+  ('SEBUM_CONTROL', @niacinamide), ('SEBUM_CONTROL', @zincPca), ('SEBUM_CONTROL', @vitaminC),
+  ('HYDRATION', @hyaluronic), ('HYDRATION', @ceramide), ('HYDRATION', @panthenol);
+
 -- 3) product는 sql/products_seed.sql에서 실제 크롤링 데이터로 넣는다 (이 파일 다음에 실행)
 
 -- 4) Course A: 진행중 코스 (member 1) — "진행중" 분기 테스트용
