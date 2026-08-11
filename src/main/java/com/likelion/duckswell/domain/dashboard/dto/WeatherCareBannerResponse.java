@@ -1,6 +1,10 @@
 package com.likelion.duckswell.domain.dashboard.dto;
 
 public record WeatherCareBannerResponse(
-        String message
+        WeatherIndicatorCard uv,
+        WeatherIndicatorCard humidity,
+        WeatherIndicatorCard dust,
+        String summaryMessage,
+        String triggerFactor
 ) {
 }

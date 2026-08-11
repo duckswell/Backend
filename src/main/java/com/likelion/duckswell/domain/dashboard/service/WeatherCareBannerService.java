@@ -4,6 +4,8 @@ import com.likelion.duckswell.domain.course.dto.CurrentCourseResponse;
 import com.likelion.duckswell.domain.course.entity.CourseType;
 import com.likelion.duckswell.domain.course.service.CourseService;
 import com.likelion.duckswell.domain.dashboard.dto.WeatherCareBannerResponse;
+import com.likelion.duckswell.domain.dashboard.dto.WeatherCareTriggerFactor;
+import com.likelion.duckswell.domain.dashboard.dto.WeatherIndicatorCard;
 import com.likelion.duckswell.domain.weather.dto.WeatherResponse;
 import com.likelion.duckswell.domain.weather.service.WeatherService;
 import java.util.Optional;
@@ -14,12 +16,19 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class WeatherCareBannerService {
 
-    private static final double UV_VERY_HIGH_THRESHOLD = 8;
+    private static final double UV_MODERATE_THRESHOLD = 3;
     private static final double UV_HIGH_THRESHOLD = 6;
+    private static final double UV_VERY_HIGH_THRESHOLD = 8;
+    private static final double UV_EXTREME_THRESHOLD = 11;
+
     private static final int HUMIDITY_VERY_LOW_THRESHOLD = 30;
+    private static final int HUMIDITY_LOW_THRESHOLD = 40;
+    private static final int HUMIDITY_HIGH_THRESHOLD = 70;
     private static final int HUMIDITY_VERY_HIGH_THRESHOLD = 80;
-    private static final double DUST_VERY_BAD_THRESHOLD = 150;
-    private static final double DUST_BAD_THRESHOLD = 80;
+
+    private static final double DUST_GOOD_THRESHOLD = 30;
+    private static final double DUST_MODERATE_THRESHOLD = 80;
+    private static final double DUST_BAD_THRESHOLD = 150;
 
     private final WeatherService weatherService;
     private final CourseService courseService;
@@ -31,28 +40,81 @@ public class WeatherCareBannerService {
         }
 
         WeatherResponse weather = weatherService.getCurrentWeather(lat, lon);
-        return Optional.of(new WeatherCareBannerResponse(resolveMessage(weather)));
+        WeatherCareTriggerFactor triggerFactor = resolveTriggerFactor(weather);
+
+        return Optional.of(new WeatherCareBannerResponse(
+                resolveUvCard(weather.uvIndex()),
+                resolveHumidityCard(weather.humidity()),
+                resolveDustCard(weather.pm10()),
+                triggerFactor.getSummaryMessage(),
+                triggerFactor.getDescription()
+        ));
     }
 
-    private String resolveMessage(WeatherResponse weather) {
+    private WeatherCareTriggerFactor resolveTriggerFactor(WeatherResponse weather) {
         if (weather.uvIndex() >= UV_VERY_HIGH_THRESHOLD) {
-            return "오늘은 한낮의 야외 활동을 줄여 주세요";
+            return WeatherCareTriggerFactor.UV_VERY_HIGH_OR_EXTREME;
         }
         if (weather.uvIndex() >= UV_HIGH_THRESHOLD) {
-            return "오늘은 햇빛으로부터 피부를 보호해 주세요";
+            return WeatherCareTriggerFactor.UV_HIGH;
         }
         if (weather.humidity() < HUMIDITY_VERY_LOW_THRESHOLD) {
-            return "오늘은 피부가 쉽게 건조해질 수 있어요";
+            return WeatherCareTriggerFactor.HUMIDITY_VERY_LOW;
         }
         if (weather.humidity() >= HUMIDITY_VERY_HIGH_THRESHOLD) {
-            return "오늘은 땀이 피부에 오래 남지 않게 해주세요";
-        }
-        if (weather.pm10() > DUST_VERY_BAD_THRESHOLD) {
-            return "오늘은 야외 활동을 가능한 줄여 주세요";
+            return WeatherCareTriggerFactor.HUMIDITY_VERY_HIGH;
         }
         if (weather.pm10() > DUST_BAD_THRESHOLD) {
-            return "오늘은 외출 후 피부를 깨끗이 씻어 주세요";
+            return WeatherCareTriggerFactor.DUST_VERY_BAD;
         }
-        return "오늘은 기본 케어를 편안하게 이어가세요";
+        if (weather.pm10() > DUST_MODERATE_THRESHOLD) {
+            return WeatherCareTriggerFactor.DUST_BAD;
+        }
+        return WeatherCareTriggerFactor.ALL_GOOD;
+    }
+
+    private WeatherIndicatorCard resolveUvCard(double uvIndex) {
+        if (uvIndex >= UV_EXTREME_THRESHOLD) {
+            return new WeatherIndicatorCard(uvIndex, "위험", "외출자제");
+        }
+        if (uvIndex >= UV_VERY_HIGH_THRESHOLD) {
+            return new WeatherIndicatorCard(uvIndex, "매우높음", "외출주의");
+        }
+        if (uvIndex >= UV_HIGH_THRESHOLD) {
+            return new WeatherIndicatorCard(uvIndex, "높음", "노출주의");
+        }
+        if (uvIndex >= UV_MODERATE_THRESHOLD) {
+            return new WeatherIndicatorCard(uvIndex, "보통", "차단필요");
+        }
+        return new WeatherIndicatorCard(uvIndex, "낮음", "부담적음");
+    }
+
+    private WeatherIndicatorCard resolveHumidityCard(int humidity) {
+        if (humidity < HUMIDITY_VERY_LOW_THRESHOLD) {
+            return new WeatherIndicatorCard(humidity, "30%미만", "매우건조");
+        }
+        if (humidity < HUMIDITY_LOW_THRESHOLD) {
+            return new WeatherIndicatorCard(humidity, "30~39%", "건조주의");
+        }
+        if (humidity < HUMIDITY_HIGH_THRESHOLD) {
+            return new WeatherIndicatorCard(humidity, "40~69%", "적정");
+        }
+        if (humidity < HUMIDITY_VERY_HIGH_THRESHOLD) {
+            return new WeatherIndicatorCard(humidity, "70~79%", "다소습함");
+        }
+        return new WeatherIndicatorCard(humidity, "80%이상", "매우습함");
+    }
+
+    private WeatherIndicatorCard resolveDustCard(double pm10) {
+        if (pm10 > DUST_BAD_THRESHOLD) {
+            return new WeatherIndicatorCard(pm10, "매우나쁨", "외출자제");
+        }
+        if (pm10 > DUST_MODERATE_THRESHOLD) {
+            return new WeatherIndicatorCard(pm10, "나쁨", "자극주의");
+        }
+        if (pm10 > DUST_GOOD_THRESHOLD) {
+            return new WeatherIndicatorCard(pm10, "보통", "공기보통");
+        }
+        return new WeatherIndicatorCard(pm10, "좋음", "공기쾌적");
     }
 }

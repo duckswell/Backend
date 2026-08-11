@@ -55,16 +55,42 @@ class WeatherCareBannerServiceTest {
     }
 
     @Test
+    void 데일리_코스면_지표별_카드가_모두_함께_내려간다() {
+        // given
+        givenDailyCourseWithWeather(weather(1.6, 34, 14.5));
+
+        // when
+        WeatherCareBannerResponse banner = weatherCareBannerService.getBanner(null, null).orElseThrow();
+
+        // then
+        assertThat(banner.uv()).satisfies(card -> {
+            assertThat(card.value()).isEqualTo(1.6);
+            assertThat(card.level()).isEqualTo("낮음");
+            assertThat(card.cardStatus()).isEqualTo("부담적음");
+        });
+        assertThat(banner.humidity()).satisfies(card -> {
+            assertThat(card.value()).isEqualTo(34);
+            assertThat(card.level()).isEqualTo("30~39%");
+            assertThat(card.cardStatus()).isEqualTo("건조주의");
+        });
+        assertThat(banner.dust()).satisfies(card -> {
+            assertThat(card.value()).isEqualTo(14.5);
+            assertThat(card.level()).isEqualTo("좋음");
+            assertThat(card.cardStatus()).isEqualTo("공기쾌적");
+        });
+    }
+
+    @Test
     void 자외선이_매우높음이면_외출자제_문구가_최우선으로_노출된다() {
         // given
         givenDailyCourseWithWeather(weather(8.0, 20, 200));
 
         // when
-        Optional<WeatherCareBannerResponse> banner = weatherCareBannerService.getBanner(null, null);
+        WeatherCareBannerResponse banner = weatherCareBannerService.getBanner(null, null).orElseThrow();
 
         // then
-        assertThat(banner).isPresent();
-        assertThat(banner.get().message()).isEqualTo("오늘은 한낮의 야외 활동을 줄여 주세요");
+        assertThat(banner.summaryMessage()).isEqualTo("오늘은 한낮의 야외 활동을 줄여 주세요");
+        assertThat(banner.triggerFactor()).isEqualTo("자외선 매우높음·위험");
     }
 
     @Test
@@ -73,10 +99,11 @@ class WeatherCareBannerServiceTest {
         givenDailyCourseWithWeather(weather(6.0, 20, 10));
 
         // when
-        Optional<WeatherCareBannerResponse> banner = weatherCareBannerService.getBanner(null, null);
+        WeatherCareBannerResponse banner = weatherCareBannerService.getBanner(null, null).orElseThrow();
 
         // then
-        assertThat(banner.get().message()).isEqualTo("오늘은 햇빛으로부터 피부를 보호해 주세요");
+        assertThat(banner.summaryMessage()).isEqualTo("오늘은 햇빛으로부터 피부를 보호해 주세요");
+        assertThat(banner.triggerFactor()).isEqualTo("자외선 높음");
     }
 
     @Test
@@ -85,10 +112,11 @@ class WeatherCareBannerServiceTest {
         givenDailyCourseWithWeather(weather(1.0, 29, 10));
 
         // when
-        Optional<WeatherCareBannerResponse> banner = weatherCareBannerService.getBanner(null, null);
+        WeatherCareBannerResponse banner = weatherCareBannerService.getBanner(null, null).orElseThrow();
 
         // then
-        assertThat(banner.get().message()).isEqualTo("오늘은 피부가 쉽게 건조해질 수 있어요");
+        assertThat(banner.summaryMessage()).isEqualTo("오늘은 피부가 쉽게 건조해질 수 있어요");
+        assertThat(banner.triggerFactor()).isEqualTo("습도 매우낮음");
     }
 
     @Test
@@ -97,10 +125,11 @@ class WeatherCareBannerServiceTest {
         givenDailyCourseWithWeather(weather(1.0, 80, 10));
 
         // when
-        Optional<WeatherCareBannerResponse> banner = weatherCareBannerService.getBanner(null, null);
+        WeatherCareBannerResponse banner = weatherCareBannerService.getBanner(null, null).orElseThrow();
 
         // then
-        assertThat(banner.get().message()).isEqualTo("오늘은 땀이 피부에 오래 남지 않게 해주세요");
+        assertThat(banner.summaryMessage()).isEqualTo("오늘은 땀이 피부에 오래 남지 않게 해주세요");
+        assertThat(banner.triggerFactor()).isEqualTo("습도 매우높음");
     }
 
     @Test
@@ -109,10 +138,11 @@ class WeatherCareBannerServiceTest {
         givenDailyCourseWithWeather(weather(1.0, 50, 151));
 
         // when
-        Optional<WeatherCareBannerResponse> banner = weatherCareBannerService.getBanner(null, null);
+        WeatherCareBannerResponse banner = weatherCareBannerService.getBanner(null, null).orElseThrow();
 
         // then
-        assertThat(banner.get().message()).isEqualTo("오늘은 야외 활동을 가능한 줄여 주세요");
+        assertThat(banner.summaryMessage()).isEqualTo("오늘은 야외 활동을 가능한 줄여 주세요");
+        assertThat(banner.triggerFactor()).isEqualTo("미세먼지 매우나쁨");
     }
 
     @Test
@@ -121,10 +151,11 @@ class WeatherCareBannerServiceTest {
         givenDailyCourseWithWeather(weather(1.0, 50, 100));
 
         // when
-        Optional<WeatherCareBannerResponse> banner = weatherCareBannerService.getBanner(null, null);
+        WeatherCareBannerResponse banner = weatherCareBannerService.getBanner(null, null).orElseThrow();
 
         // then
-        assertThat(banner.get().message()).isEqualTo("오늘은 외출 후 피부를 깨끗이 씻어 주세요");
+        assertThat(banner.summaryMessage()).isEqualTo("오늘은 외출 후 피부를 깨끗이 씻어 주세요");
+        assertThat(banner.triggerFactor()).isEqualTo("미세먼지 나쁨");
     }
 
     @Test
@@ -133,10 +164,11 @@ class WeatherCareBannerServiceTest {
         givenDailyCourseWithWeather(weather(1.6, 34, 14.5));
 
         // when
-        Optional<WeatherCareBannerResponse> banner = weatherCareBannerService.getBanner(null, null);
+        WeatherCareBannerResponse banner = weatherCareBannerService.getBanner(null, null).orElseThrow();
 
         // then
-        assertThat(banner.get().message()).isEqualTo("오늘은 기본 케어를 편안하게 이어가세요");
+        assertThat(banner.summaryMessage()).isEqualTo("오늘은 기본 케어를 편안하게 이어가세요");
+        assertThat(banner.triggerFactor()).isEqualTo("모두 양호");
     }
 
     private void givenDailyCourseWithWeather(WeatherResponse weatherResponse) {
