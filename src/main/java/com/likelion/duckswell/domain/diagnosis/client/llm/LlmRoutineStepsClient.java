@@ -366,6 +366,13 @@ public class LlmRoutineStepsClient {
             if (altName == null || altName.isBlank() || primaryNames.isEmpty()) {
                 return null;
             }
+            // alternate_ingredient_name은 자유 문자열이라 JSON 스키마로 ingredient_ids와의 중복을
+            // 막을 수 없다 - LLM이 "센텔라가 없다면 센텔라를 사용해요"처럼 같은 성분을 대체
+            // 성분으로 반환하면(프롬프트 위반) 문구 자체를 만들지 않고 건너뛴다.
+            boolean altSameAsPrimary = primaryNames.stream().anyMatch(name -> name.equalsIgnoreCase(altName.trim()));
+            if (altSameAsPrimary) {
+                return null;
+            }
             String joined = String.join("·", primaryNames);
             String lastPrimary = primaryNames.get(primaryNames.size() - 1);
             return "%s%s 없다면 %s%s 사용해요".formatted(
