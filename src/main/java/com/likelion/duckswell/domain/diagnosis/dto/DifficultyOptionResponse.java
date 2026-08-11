@@ -1,6 +1,6 @@
 package com.likelion.duckswell.domain.diagnosis.dto;
 
-import com.likelion.duckswell.domain.diagnosis.client.LlmDifficultyOption;
+import com.likelion.duckswell.domain.diagnosis.client.llm.LlmDifficultyOption;
 import com.likelion.duckswell.domain.routine.entity.RoutineDifficulty;
 
 public record DifficultyOptionResponse(
