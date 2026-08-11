@@ -3,13 +3,19 @@ package com.likelion.duckswell.domain.diagnosis.service;
 import com.likelion.duckswell.domain.course.dto.CourseResponse;
 import com.likelion.duckswell.domain.course.entity.CourseType;
 import com.likelion.duckswell.domain.course.service.CourseService;
-import com.likelion.duckswell.domain.diagnosis.client.CvAnalysisClient;
-import com.likelion.duckswell.domain.diagnosis.client.CvScoreResult;
-import com.likelion.duckswell.domain.diagnosis.client.LlmDiagnosisClient;
-import com.likelion.duckswell.domain.diagnosis.client.LlmDiagnosisContext;
-import com.likelion.duckswell.domain.diagnosis.client.LlmDiagnosisResult;
-import com.likelion.duckswell.domain.diagnosis.client.PhotoQualityResult;
-import com.likelion.duckswell.domain.diagnosis.client.PhotoStorage;
+import com.likelion.duckswell.domain.diagnosis.client.cv.CvAnalysisClient;
+import com.likelion.duckswell.domain.diagnosis.client.cv.CvScoreResult;
+import com.likelion.duckswell.domain.diagnosis.client.llm.LlmDiagnosisClient;
+import com.likelion.duckswell.domain.diagnosis.client.llm.LlmDiagnosisContext;
+import com.likelion.duckswell.domain.diagnosis.client.llm.LlmDiagnosisResult;
+import com.likelion.duckswell.domain.diagnosis.client.llm.LlmRoutineCompletionClient;
+import com.likelion.duckswell.domain.diagnosis.client.llm.LlmRoutineCompletionContext;
+import com.likelion.duckswell.domain.diagnosis.client.llm.LlmRoutineCompletionResult;
+import com.likelion.duckswell.domain.diagnosis.client.llm.LlmRoutineStepsClient;
+import com.likelion.duckswell.domain.diagnosis.client.llm.LlmRoutineStepsContext;
+import com.likelion.duckswell.domain.diagnosis.client.llm.LlmRoutineStepsResult;
+import com.likelion.duckswell.domain.diagnosis.client.cv.PhotoQualityResult;
+import com.likelion.duckswell.domain.diagnosis.client.storage.PhotoStorage;
 import com.likelion.duckswell.domain.diagnosis.dto.DifficultyOptionResponse;
 import com.likelion.duckswell.domain.diagnosis.dto.DiagnosisResponse;
 import com.likelion.duckswell.domain.diagnosis.dto.DiagnosisSubmitRequest;
@@ -19,18 +25,23 @@ import com.likelion.duckswell.domain.diagnosis.exception.DiagnosisErrorCode;
 import com.likelion.duckswell.domain.diagnosis.repository.DiagnosisRepository;
 import com.likelion.duckswell.domain.procedure.dto.ProcedureResponse;
 import com.likelion.duckswell.domain.procedure.service.ProcedureService;
+import com.likelion.duckswell.domain.routine.dto.RoutineCompleteResponse;
 import com.likelion.duckswell.domain.routine.dto.RoutineSnapshot;
+import com.likelion.duckswell.domain.routine.dto.RoutineStepsResponse;
+import com.likelion.duckswell.domain.routine.entity.RoutineDifficulty;
 import com.likelion.duckswell.domain.routine.service.RoutineService;
 import com.likelion.duckswell.global.exception.CustomException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -43,6 +54,8 @@ public class DiagnosisService {
     private final PhotoStorage photoStorage;
     private final CvAnalysisClient cvAnalysisClient;
     private final LlmDiagnosisClient llmDiagnosisClient;
+    private final LlmRoutineStepsClient llmRoutineStepsClient;
+    private final LlmRoutineCompletionClient llmRoutineCompletionClient;
 
     /**
      * 사진은 여기서 딱 한 번 업로드/저장되고 품질을 확인한다. 통과한 photoId를 제출 시점에 재사용한다.
@@ -51,12 +64,28 @@ public class DiagnosisService {
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public PhotoCheckResponse checkPhoto(MultipartFile photo) {
         String photoId = photoStorage.save(photo);
-        PhotoQualityResult quality = cvAnalysisClient.checkPhotoQuality(photoStorage.resolvePath(photoId));
-        if (!quality.ok()) {
-            photoStorage.delete(photoId);
-            throw new CustomException(mapQualityReason(quality.reason()));
+        String resolvedPath = null;
+        boolean accepted = false;
+        try {
+            resolvedPath = photoStorage.resolvePath(photoId);
+            PhotoQualityResult quality = cvAnalysisClient.checkPhotoQuality(resolvedPath);
+            if (!quality.ok()) {
+                throw new CustomException(mapQualityReason(quality.reason()));
+            }
+            accepted = true;
+            return new PhotoCheckResponse(photoId);
+        } finally {
+            if (resolvedPath != null) {
+                photoStorage.cleanupResolvedPath(resolvedPath);
+            }
+            if (!accepted) {
+                try {
+                    photoStorage.delete(photoId);
+                } catch (RuntimeException e) {
+                    log.warn("품질 체크 실패한 사진 삭제 실패: photoId={}", photoId, e);
+                }
+            }
         }
-        return new PhotoCheckResponse(photoId);
     }
 
     /**
@@ -115,6 +144,48 @@ public class DiagnosisService {
                 .map(DifficultyOptionResponse::from)
                 .toList();
         return DiagnosisResponse.of(diagnosis, options);
+    }
+
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public RoutineStepsResponse selectDifficulty(Long routineId, RoutineDifficulty difficulty) {
+        RoutineSnapshot routine = routineService.getRoutineSnapshot(routineId);
+        CourseResponse course = courseService.getCourse(routine.courseId());
+        List<LlmRoutineStepsContext.IngredientCandidate> candidates =
+                routineService.resolveIngredientCandidates(course.routineTypeCode());
+        Diagnosis diagnosis = diagnosisRepository.findByRoutineId(routineId).orElse(null);
+
+        LlmRoutineStepsContext context = new LlmRoutineStepsContext(
+                difficulty,
+                routine.symptoms(),
+                routine.symptomNote(),
+                diagnosis != null ? diagnosis.getRednessScore() : null,
+                diagnosis != null ? diagnosis.getTextureScore() : null,
+                diagnosis != null ? diagnosis.getBlemishScore() : null,
+                diagnosis != null ? diagnosis.getSummaryText() : null,
+                procedureService.getMyProcedures(),
+                candidates
+        );
+        LlmRoutineStepsResult result = llmRoutineStepsClient.generate(context);
+
+        return routineService.applyDifficultySelection(routineId, difficulty, result);
+    }
+
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public RoutineCompleteResponse completeRoutine(Long routineId) {
+        RoutineSnapshot routine = routineService.getRoutineSnapshot(routineId);
+        CourseResponse course = courseService.getCourse(routine.courseId());
+        List<LlmRoutineCompletionContext.CompletedStep> completedSteps = routineService.getCompletedStepsInfo(routineId);
+
+        LlmRoutineCompletionContext context = new LlmRoutineCompletionContext(
+                course.courseType(),
+                course.routineTypeName(),
+                course.courseType() == CourseType.DAILY
+                        ? courseService.getStreakDaysAssumingCompleted(routine.courseId(), routine.routineDate())
+                        : null,
+                completedSteps
+        );
+        LlmRoutineCompletionResult result = llmRoutineCompletionClient.summarize(context);
+        return routineService.applyCompletion(routineId, result.completionSummaryText());
     }
 
     private DiagnosisErrorCode mapQualityReason(String reason) {

@@ -1,4 +1,4 @@
-package com.likelion.duckswell.domain.diagnosis.client;
+package com.likelion.duckswell.domain.diagnosis.client.storage;
 
 import com.likelion.duckswell.domain.diagnosis.exception.DiagnosisErrorCode;
 import com.likelion.duckswell.global.exception.CustomException;

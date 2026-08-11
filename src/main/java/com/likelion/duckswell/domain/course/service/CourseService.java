@@ -16,9 +16,7 @@ import com.likelion.duckswell.domain.routine.entity.Routine;
 import com.likelion.duckswell.domain.routine.repository.RoutineRepository;
 import com.likelion.duckswell.global.exception.CustomException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -80,15 +78,31 @@ public class CourseService {
 
     public Optional<CurrentCourseResponse> getCurrentCourse() {
         return courseRepository.findByMemberIdAndStatus(Member.DEFAULT_ID, CourseStatus.IN_PROGRESS)
-                .map(course -> CurrentCourseResponse.of(course, calculateStreakDays(course.getId())));
+                .map(course -> CurrentCourseResponse.of(course, calculateStreakDays(course.getId(), null)));
     }
 
-    private int calculateStreakDays(Long courseId) {
+    /** 다른 도메인(routine 등)이 courseId만으로 연속 지속일을 참조해야 할 때 쓰는 조회용 메서드. */
+    public int getStreakDays(Long courseId) {
+        return calculateStreakDays(courseId, null);
+    }
+
+    /**
+     * 루틴을 지금 막 완료하는 시점(completedAt이 아직 저장되기 전)에 쓰는 조회용 메서드.
+     * 완료 버튼을 누른 시각이 아니라 그 루틴이 원래 며칠차 루틴인지(routineDate)로 카운트해야
+     * 자정 넘겨 늦게 완료해도 스트릭이 엉뚱한 날짜에 꽂혀 끊기지 않는다.
+     */
+    public int getStreakDaysAssumingCompleted(Long courseId, LocalDate routineDate) {
+        return calculateStreakDays(courseId, routineDate);
+    }
+
+    private int calculateStreakDays(Long courseId, LocalDate assumeCompletedDate) {
         Set<LocalDate> completedDates = routineRepository.findByCourseIdOrderByRoutineDateDesc(courseId).stream()
-                .map(Routine::getCompletedAt)
-                .filter(Objects::nonNull)
-                .map(LocalDateTime::toLocalDate)
+                .filter(routine -> routine.getCompletedAt() != null)
+                .map(Routine::getRoutineDate)
                 .collect(Collectors.toSet());
+        if (assumeCompletedDate != null) {
+            completedDates.add(assumeCompletedDate);
+        }
 
         LocalDate cursor = LocalDate.now();
         if (!completedDates.contains(cursor)) {

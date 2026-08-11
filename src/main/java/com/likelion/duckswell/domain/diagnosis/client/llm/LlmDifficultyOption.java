@@ -1,4 +1,4 @@
-package com.likelion.duckswell.domain.diagnosis.client;
+package com.likelion.duckswell.domain.diagnosis.client.llm;
 
 /**
  * title은 고정.
