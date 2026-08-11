@@ -2,7 +2,9 @@ package com.likelion.duckswell.domain.course.controller;
 
 import com.likelion.duckswell.domain.course.dto.CourseResponse;
 import com.likelion.duckswell.domain.course.dto.CourseStartRequest;
+import com.likelion.duckswell.domain.course.dto.CourseSymptomSummaryResponse;
 import com.likelion.duckswell.domain.course.dto.CurrentCourseResponse;
+import com.likelion.duckswell.domain.course.dto.RecoverySummaryResponse;
 import com.likelion.duckswell.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -62,4 +64,36 @@ public interface CourseApi {
                     """
     )
     ResponseEntity<ApiResponse<CurrentCourseResponse>> getCurrentCourse();
+
+    @Operation(
+            summary = "코스 최근 7일 증상 요약 + 데일리 루틴 추천",
+            description = """
+                    최근 7일(오늘 포함)간 기록된 증상 중 가장 많이 선택된 키워드 상위 2개(topSymptoms)와,
+                    그 증상들을 근거로 추천하는 데일리 루틴 타입(recommendedRoutineTypeCode/Name)을
+                    함께 반환합니다(추천만 하며 자동으로 코스를 시작하지는 않습니다 .
+                    (실제 시작은 별도 POST /courses/start 호출.)
+                    
+                    최근 7일 증상 기록이 없으면 topSymptoms는 빈 리스트, 추천 필드는 둘 다 null입니다.
+                    """
+    )
+    ResponseEntity<ApiResponse<CourseSymptomSummaryResponse>> getSymptomSummary(
+            @Parameter(description = "조회할 코스 id") Long courseId);
+
+    @Operation(
+            summary = "어제 관리 요약 + 오늘 회복 단계",
+            description = """
+                    집중 코스에서 어제 진행한 관리를 요약하고 현재 회복 단계를 자연스럽게 서술하는
+                    정확히 한 문장을 반환합니다(예: "어제 진정 관리를 마치고, 피부 장벽이 회복
+                    중이에요"). 
+                    
+                    어제 완료한 루틴이 없으면 관리 요약 없이 오늘 회복 단계만
+                    서술합니다. 회복 일차 숫자는 화면에 별도로 표시되므로 텍스트에는 날짜/일차를
+                    언급하지 않습니다. 
+                    
+                    어제 기록 기준으로 캐싱되어, 같은 날 다시 호출해도 새로
+                    생성하지 않고 같은 문장을 반환합니다.
+                    """
+    )
+    ResponseEntity<ApiResponse<RecoverySummaryResponse>> getRecoverySummary(
+            @Parameter(description = "조회할 코스 id") Long courseId);
 }

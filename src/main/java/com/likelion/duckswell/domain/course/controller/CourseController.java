@@ -2,8 +2,11 @@ package com.likelion.duckswell.domain.course.controller;
 
 import com.likelion.duckswell.domain.course.dto.CourseResponse;
 import com.likelion.duckswell.domain.course.dto.CourseStartRequest;
+import com.likelion.duckswell.domain.course.dto.CourseSymptomSummaryResponse;
 import com.likelion.duckswell.domain.course.dto.CurrentCourseResponse;
+import com.likelion.duckswell.domain.course.dto.RecoverySummaryResponse;
 import com.likelion.duckswell.domain.course.service.CourseService;
+import com.likelion.duckswell.domain.diagnosis.service.DiagnosisService;
 import com.likelion.duckswell.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class CourseController implements CourseApi {
 
     private final CourseService courseService;
+    private final DiagnosisService diagnosisService;
 
     @Override
     @PostMapping("/start")
@@ -51,5 +55,17 @@ public class CourseController implements CourseApi {
     @GetMapping("/current")
     public ResponseEntity<ApiResponse<CurrentCourseResponse>> getCurrentCourse() {
         return ResponseEntity.ok(ApiResponse.success(courseService.getCurrentCourse().orElse(null)));
+    }
+
+    @Override
+    @GetMapping("/{courseId}/symptom-summary")
+    public ResponseEntity<ApiResponse<CourseSymptomSummaryResponse>> getSymptomSummary(@PathVariable Long courseId) {
+        return ResponseEntity.ok(ApiResponse.success(courseService.getSymptomSummary(courseId)));
+    }
+
+    @Override
+    @GetMapping("/{courseId}/recovery-summary")
+    public ResponseEntity<ApiResponse<RecoverySummaryResponse>> getRecoverySummary(@PathVariable Long courseId) {
+        return ResponseEntity.ok(ApiResponse.success(diagnosisService.getRecoverySummary(courseId)));
     }
 }

@@ -5,15 +5,30 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.likelion.duckswell.domain.course.dto.CourseResponse;
 import com.likelion.duckswell.domain.course.dto.CourseStartRequest;
+import com.likelion.duckswell.domain.course.dto.CourseSymptomSummaryResponse;
+import com.likelion.duckswell.domain.course.dto.IngredientCandidateResponse;
+import com.likelion.duckswell.domain.course.dto.RecommendedProductResponse;
 import com.likelion.duckswell.domain.course.entity.Course;
 import com.likelion.duckswell.domain.course.entity.CourseStatus;
 import com.likelion.duckswell.domain.course.entity.CourseType;
 import com.likelion.duckswell.domain.course.entity.RoutineType;
 import com.likelion.duckswell.domain.course.entity.RoutineTypeCode;
+import com.likelion.duckswell.domain.course.entity.RoutineTypeIngredient;
 import com.likelion.duckswell.domain.course.exception.CourseErrorCode;
 import com.likelion.duckswell.domain.course.repository.CourseRepository;
+import com.likelion.duckswell.domain.course.repository.RoutineTypeIngredientRepository;
 import com.likelion.duckswell.domain.course.repository.RoutineTypeRepository;
 import com.likelion.duckswell.domain.member.entity.Member;
+import com.likelion.duckswell.domain.product.entity.Ingredient;
+import com.likelion.duckswell.domain.product.entity.IngredientCategory;
+import com.likelion.duckswell.domain.product.entity.Product;
+import com.likelion.duckswell.domain.product.entity.ProductCategory;
+import com.likelion.duckswell.domain.product.repository.IngredientRepository;
+import com.likelion.duckswell.domain.product.repository.ProductRepository;
+import com.likelion.duckswell.domain.product.service.ProductService;
+import com.likelion.duckswell.domain.routine.entity.Routine;
+import com.likelion.duckswell.domain.routine.entity.Symptom;
+import com.likelion.duckswell.domain.routine.repository.RoutineRepository;
 import com.likelion.duckswell.global.exception.CustomException;
 import java.time.LocalDate;
 import java.util.List;
@@ -26,7 +41,7 @@ import org.springframework.context.annotation.Import;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import(CourseService.class)
+@Import({CourseService.class, ProductService.class})
 class CourseServiceTest {
 
     @Autowired
@@ -37,6 +52,18 @@ class CourseServiceTest {
 
     @Autowired
     private RoutineTypeRepository routineTypeRepository;
+
+    @Autowired
+    private RoutineTypeIngredientRepository routineTypeIngredientRepository;
+
+    @Autowired
+    private IngredientRepository ingredientRepository;
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    @Autowired
+    private RoutineRepository routineRepository;
 
     @Autowired
     private TestEntityManager entityManager;
@@ -175,6 +202,126 @@ class CourseServiceTest {
         assertThat(history).filteredOn(c -> c.id().equals(second.id()))
                 .extracting(CourseResponse::status)
                 .containsExactly(CourseStatus.IN_PROGRESS);
+    }
+
+    @Test
+    void 관리_타입에_배정된_성분이_후보군에_포함된다() {
+        // given
+        seedRoutineType(RoutineTypeCode.HYDRATION);
+        Ingredient ingredient = ingredientRepository.save(new Ingredient("히알루론산", IngredientCategory.MOISTURE, "보습 성분"));
+        RoutineType hydration = routineTypeRepository.findById(RoutineTypeCode.HYDRATION).orElseThrow();
+        routineTypeIngredientRepository.save(new RoutineTypeIngredient(hydration, ingredient.getId()));
+        entityManager.flush();
+
+        // when
+        List<IngredientCandidateResponse> candidates = courseService.getIngredientCandidates(RoutineTypeCode.HYDRATION);
+
+        // then
+        assertThat(candidates).extracting(IngredientCandidateResponse::ingredientId).contains(ingredient.getId());
+    }
+
+    @Test
+    void routineTypeCode가_없으면_새로_추가한_성분도_포함된_전체_목록이_반환된다() {
+        // given
+        Ingredient ingredient = ingredientRepository.save(new Ingredient("나이아신아마이드", IngredientCategory.VITAMIN, "미백 성분"));
+        entityManager.flush();
+
+        // when
+        List<IngredientCandidateResponse> candidates = courseService.getIngredientCandidates(null);
+
+        // then
+        assertThat(candidates).extracting(IngredientCandidateResponse::ingredientId).contains(ingredient.getId());
+    }
+
+    @Test
+    void 최근_7일_증상만_집계되고_그_이전_증상은_제외된다() {
+        // given
+        endAnyActiveCourse();
+        Course course = courseRepository.save(new Course(Member.DEFAULT_ID, null, CourseType.FOCUS, null, LocalDate.now()));
+
+        Routine withinWindow = new Routine(course.getId(), LocalDate.now(), null, null);
+        withinWindow.addSymptom(Symptom.DRYNESS);
+        withinWindow.addSymptom(Symptom.DRYNESS);
+        withinWindow.addSymptom(Symptom.FLAKING);
+        routineRepository.save(withinWindow);
+
+        Routine outsideWindow = new Routine(course.getId(), LocalDate.now().minusDays(10), null, null);
+        outsideWindow.addSymptom(Symptom.HEAT);
+        routineRepository.save(outsideWindow);
+
+        entityManager.flush();
+
+        // when
+        CourseSymptomSummaryResponse summary = courseService.getSymptomSummary(course.getId());
+
+        // then: DRYNESS 2회가 1위 키워드, 10일 전 HEAT는 집계에서 제외되고
+        // top2(DRYNESS→{HYDRATION}, FLAKING→{HYDRATION,CLEAR_UP})의 교집합은 HYDRATION 하나뿐이라
+        // 추천 타입도 HYDRATION이 된다 (day-after-detailed-flow-spec.md 교집합 알고리즘)
+        assertThat(summary.topSymptoms()).extracting(CourseSymptomSummaryResponse.SymptomFrequency::symptom)
+                .doesNotContain(Symptom.HEAT);
+        assertThat(summary.topSymptoms().get(0).symptom()).isEqualTo(Symptom.DRYNESS);
+        assertThat(summary.topSymptoms().get(0).count()).isEqualTo(2);
+        assertThat(summary.recommendedRoutineTypeCode()).isEqualTo(RoutineTypeCode.HYDRATION);
+    }
+
+    @Test
+    void 교집합이_없는_두_증상이_top2면_클리어업이_기본값으로_추천된다() {
+        // given
+        endAnyActiveCourse();
+        Course course = courseRepository.save(new Course(Member.DEFAULT_ID, null, CourseType.FOCUS, null, LocalDate.now()));
+
+        // DRYNESS -> {HYDRATION}, OILINESS -> {SEBUM_CONTROL}: 교집합 없음 -> 기본값 CLEAR_UP
+        Routine routine = new Routine(course.getId(), LocalDate.now(), null, null);
+        routine.addSymptom(Symptom.DRYNESS);
+        routine.addSymptom(Symptom.OILINESS);
+        routineRepository.save(routine);
+        entityManager.flush();
+
+        // when
+        CourseSymptomSummaryResponse summary = courseService.getSymptomSummary(course.getId());
+
+        // then
+        assertThat(summary.recommendedRoutineTypeCode()).isEqualTo(RoutineTypeCode.CLEAR_UP);
+    }
+
+    @Test
+    void 최근_증상_기록이_없으면_요약과_추천_필드가_모두_비어있다() {
+        // given
+        endAnyActiveCourse();
+        CourseResponse started = courseService.startCourse(new CourseStartRequest(CourseType.FOCUS, null));
+
+        // when
+        CourseSymptomSummaryResponse summary = courseService.getSymptomSummary(started.id());
+
+        // then
+        assertThat(summary.topSymptoms()).isEmpty();
+        assertThat(summary.recommendedRoutineTypeCode()).isNull();
+        assertThat(summary.recommendedRoutineTypeName()).isNull();
+    }
+
+    @Test
+    void 성분마다_제품을_하나씩_상한없이_뽑는다() {
+        // given
+        Ingredient niacinamide = ingredientRepository.save(new Ingredient("나이아신아마이드", IngredientCategory.VITAMIN, "미백 성분"));
+        Ingredient panthenol = ingredientRepository.save(new Ingredient("판테놀", IngredientCategory.MOISTURE, "보습 성분"));
+        Ingredient centella = ingredientRepository.save(new Ingredient("센텔라", IngredientCategory.PLANT_EXTRACT, "진정 성분"));
+        Product niacinamideSerum = productRepository.save(
+                new Product(niacinamide, "나이아신아마이드 세럼", "브랜드A", ProductCategory.AMPOULE_SERUM, null, null));
+        Product panthenolCream = productRepository.save(
+                new Product(panthenol, "판테놀 크림", "브랜드B", ProductCategory.CREAM, null, null));
+        Product centellaCream = productRepository.save(
+                new Product(centella, "센텔라 크림", "브랜드C", ProductCategory.CREAM, null, null));
+        entityManager.flush();
+
+        // when: 후보 3개(3개 상한이 있었다면 걸렸을 개수)
+        List<RecommendedProductResponse> recommended = courseService.pickRecommendedProducts(List.of(
+                new CourseService.ProductPickCandidate(niacinamide.getId(), null),
+                new CourseService.ProductPickCandidate(panthenol.getId(), null),
+                new CourseService.ProductPickCandidate(centella.getId(), null)));
+
+        // then
+        assertThat(recommended).extracting(r -> r.product().id())
+                .containsExactlyInAnyOrder(niacinamideSerum.getId(), panthenolCream.getId(), centellaCream.getId());
     }
 
     private void seedRoutineType(RoutineTypeCode code) {
