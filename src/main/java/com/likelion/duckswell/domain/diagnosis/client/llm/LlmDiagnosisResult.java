@@ -1,4 +1,4 @@
-package com.likelion.duckswell.domain.diagnosis.client;
+package com.likelion.duckswell.domain.diagnosis.client.llm;
 
 import java.util.List;
 

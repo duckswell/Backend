@@ -1,4 +1,4 @@
-package com.likelion.duckswell.domain.diagnosis.client;
+package com.likelion.duckswell.domain.diagnosis.client.storage;
 
 import org.springframework.web.multipart.MultipartFile;
 

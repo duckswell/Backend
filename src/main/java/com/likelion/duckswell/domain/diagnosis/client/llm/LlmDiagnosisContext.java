@@ -1,5 +1,6 @@
-package com.likelion.duckswell.domain.diagnosis.client;
+package com.likelion.duckswell.domain.diagnosis.client.llm;
 
+import com.likelion.duckswell.domain.diagnosis.client.cv.CvScoreResult;
 import com.likelion.duckswell.domain.procedure.dto.ProcedureResponse;
 import com.likelion.duckswell.domain.routine.entity.Symptom;
 import java.util.List;

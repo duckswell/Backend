@@ -1,4 +1,4 @@
-package com.likelion.duckswell.domain.diagnosis.client;
+package com.likelion.duckswell.domain.diagnosis.client.cv;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
