@@ -1,13 +1,17 @@
 package com.likelion.duckswell.domain.routine.controller;
 
+import com.likelion.duckswell.domain.course.dto.RecommendedProductResponse;
 import com.likelion.duckswell.domain.routine.dto.RoutineCompleteResponse;
+import com.likelion.duckswell.domain.routine.dto.RoutineStepSummaryResponse;
 import com.likelion.duckswell.domain.routine.dto.RoutineStepsResponse;
 import com.likelion.duckswell.domain.routine.dto.SelectDifficultyRequest;
 import com.likelion.duckswell.domain.routine.dto.TodayRoutineResponse;
 import com.likelion.duckswell.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
 
 @Tag(name = "Routine", description = "난이도 선택 → 루틴 스텝 생성/완료 API")
@@ -45,7 +49,7 @@ public interface RoutineApi {
 
                     ingredientId는 sql/seed_shop_demo.sql 시드 순서 기준 고정값입니다:
                     1=비타민C, 2=나이아신아마이드, 3=히알루론산, 4=세라마이드, 5=판테놀,
-                    6=센텔라, 7=알로에, 8=징크PCA.
+                    6=센텔라, 7=알로에, 8=징크.
 
                     이미 난이도를 선택한 루틴에 다시 호출하면(재선택), 이전에 생성됐던 스텝은
                     전부 지워지고 새로 생성된 스텝으로 교체됩니다.
@@ -72,4 +76,28 @@ public interface RoutineApi {
                     """
     )
     ResponseEntity<ApiResponse<RoutineCompleteResponse>> completeRoutine(Long routineId);
+
+    @Operation(
+            summary = "스텝별 대표 성분 + 제품 종류 요약",
+            description = """
+                    각 스텝의 대표(첫번째) 성분 id/이름과 제품 종류(category)만 간단히 반환합니다.
+                    
+                    이 category+ingredientId로 상점 페이지를 해당 성분이 체크된 상태로 이동시키는 데 쓰시면 됩니다. 
+                    클렌징 스텝처럼 성분이 없는 스텝은 ingredientId/ingredientName이 둘 다 null입니다.
+                    """
+    )
+    ResponseEntity<ApiResponse<List<RoutineStepSummaryResponse>>> getStepSummaries(
+            @Parameter(description = "루틴 id") Long routineId);
+
+    @Operation(
+            summary = "루틴 완료 기준 추천 제품 조회",
+            description = """
+                    이 루틴에 쓰인 성분(클렌저 제외)마다 해당 스텝 카테고리로 상점 제품을 1개씩 뽑아 리스트로 반환합니다
+                    (개수 상한 없음, 성분당 제품이 없으면 결과에서  빠집니다).
+                    
+                    "루틴 완료" 버튼을 누른 뒤 이 API를 별도로 호출해서 오늘의 추천 제품을 보여주는 용도입니다.
+                    """
+    )
+    ResponseEntity<ApiResponse<List<RecommendedProductResponse>>> getRecommendedProducts(
+            @Parameter(description = "루틴 id") Long routineId);
 }
