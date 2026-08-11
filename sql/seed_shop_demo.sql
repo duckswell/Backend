@@ -23,7 +23,7 @@ INSERT INTO ingredient (name, category, description, created_at, updated_at) VAL
   ('판테놀', 'MOISTURE', '피부에 수분을 공급하고 외부 자극으로 약해진 피부 장벽을 편안하게 관리해 줘요', NOW(), NOW()),
   ('센텔라', 'PLANT_EXTRACT', '자극받아 붉어진 피부를 편안하게 진정하고 건강한 피부 컨디션을 유지하도록 도와줘요', NOW(), NOW()),
   ('알로에', 'PLANT_EXTRACT', '자극받은 피부를 산뜻하게 진정하고 건조해진 피부에 촉촉함을 더해줘요', NOW(), NOW()),
-  ('징크 PCA', 'MOISTURE', '과도한 피지와 번들거림을 조절해 피부를 산뜻하고 깨끗한 상태로 유지하도록 도와줘요', NOW(), NOW());
+  ('징크', 'MOISTURE', '과도한 피지와 번들거림을 조절해 피부를 산뜻하고 깨끗한 상태로 유지하도록 도와줘요', NOW(), NOW());
 
 SET @vitaminC = (SELECT id FROM ingredient WHERE name = '비타민C');
 SET @niacinamide = (SELECT id FROM ingredient WHERE name = '나이아신아마이드');
@@ -32,7 +32,7 @@ SET @ceramide = (SELECT id FROM ingredient WHERE name = '세라마이드');
 SET @panthenol = (SELECT id FROM ingredient WHERE name = '판테놀');
 SET @centella = (SELECT id FROM ingredient WHERE name = '센텔라');
 SET @aloe = (SELECT id FROM ingredient WHERE name = '알로에');
-SET @zincPca = (SELECT id FROM ingredient WHERE name = '징크 PCA');
+SET @zinc = (SELECT id FROM ingredient WHERE name = '징크');
 
 -- 2-1) ingredient_tag (성분별 키워드)
 INSERT INTO ingredient_tag (ingredient_id, tag) VALUES
@@ -43,13 +43,14 @@ INSERT INTO ingredient_tag (ingredient_id, tag) VALUES
   (@panthenol, '보습'), (@panthenol, '장벽 강화'), (@panthenol, '진정'),
   (@centella, '진정'), (@centella, '붉은기'), (@centella, '피부 보호'),
   (@aloe, '진정'), (@aloe, '수분 공급'), (@aloe, '쿨링'),
-  (@zincPca, '피지 조절'), (@zincPca, '번들거림 완화'), (@zincPca, '피부 청결');
+  (@zinc, '피지 조절'), (@zinc, '번들거림 완화'), (@zinc, '피부 청결');
 
 -- 2-2) routine_type_ingredient (관리 타입별 고정 추천 성분 후보군 - LLM 성분 grounding용)
+-- day-after-detailed-flow-spec.md "루틴 타입별 고정 성분(Figma 5번 이미지 교차 확인)" 원안 그대로
 INSERT INTO routine_type_ingredient (routine_type_code, ingredient_id) VALUES
   ('COOLDOWN', @centella), ('COOLDOWN', @panthenol), ('COOLDOWN', @aloe),
-  ('CLEAR_UP', @niacinamide), ('CLEAR_UP', @zincPca), ('CLEAR_UP', @centella),
-  ('SEBUM_CONTROL', @niacinamide), ('SEBUM_CONTROL', @zincPca), ('SEBUM_CONTROL', @vitaminC),
+  ('CLEAR_UP', @niacinamide), ('CLEAR_UP', @vitaminC),
+  ('SEBUM_CONTROL', @niacinamide), ('SEBUM_CONTROL', @zinc),
   ('HYDRATION', @hyaluronic), ('HYDRATION', @ceramide), ('HYDRATION', @panthenol);
 
 -- 3) product는 sql/products_seed.sql에서 실제 크롤링 데이터로 넣는다 (이 파일 다음에 실행)
