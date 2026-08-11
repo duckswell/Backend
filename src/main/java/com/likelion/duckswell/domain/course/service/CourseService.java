@@ -83,6 +83,11 @@ public class CourseService {
                 .map(course -> CurrentCourseResponse.of(course, calculateStreakDays(course.getId())));
     }
 
+    /** 다른 도메인(routine 등)이 courseId만으로 연속 지속일을 참조해야 할 때 쓰는 조회용 메서드. */
+    public int getStreakDays(Long courseId) {
+        return calculateStreakDays(courseId);
+    }
+
     private int calculateStreakDays(Long courseId) {
         Set<LocalDate> completedDates = routineRepository.findByCourseIdOrderByRoutineDateDesc(courseId).stream()
                 .map(Routine::getCompletedAt)
