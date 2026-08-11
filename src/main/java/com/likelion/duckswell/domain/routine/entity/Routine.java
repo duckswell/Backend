@@ -52,6 +52,9 @@ public class Routine extends BaseEntity {
     @Column(length = 500)
     private String completionSummaryText;
 
+    @Column(length = 500)
+    private String recoveryStageSummaryText;
+
     private LocalDateTime completedAt;
 
     @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -92,5 +95,9 @@ public class Routine extends BaseEntity {
     public void complete(String completionSummaryText) {
         this.completionSummaryText = completionSummaryText;
         this.completedAt = LocalDateTime.now();
+    }
+
+    public void cacheRecoveryStageSummary(String recoveryStageSummaryText) {
+        this.recoveryStageSummaryText = recoveryStageSummaryText;
     }
 }

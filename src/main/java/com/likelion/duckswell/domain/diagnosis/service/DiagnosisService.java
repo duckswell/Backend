@@ -1,6 +1,7 @@
 package com.likelion.duckswell.domain.diagnosis.service;
 
 import com.likelion.duckswell.domain.course.dto.CourseResponse;
+import com.likelion.duckswell.domain.course.dto.RecoverySummaryResponse;
 import com.likelion.duckswell.domain.course.entity.CourseType;
 import com.likelion.duckswell.domain.course.service.CourseService;
 import com.likelion.duckswell.domain.diagnosis.client.cv.CvAnalysisClient;
@@ -8,6 +9,9 @@ import com.likelion.duckswell.domain.diagnosis.client.cv.CvScoreResult;
 import com.likelion.duckswell.domain.diagnosis.client.llm.LlmDiagnosisClient;
 import com.likelion.duckswell.domain.diagnosis.client.llm.LlmDiagnosisContext;
 import com.likelion.duckswell.domain.diagnosis.client.llm.LlmDiagnosisResult;
+import com.likelion.duckswell.domain.diagnosis.client.llm.LlmRecoveryStageClient;
+import com.likelion.duckswell.domain.diagnosis.client.llm.LlmRecoveryStageContext;
+import com.likelion.duckswell.domain.diagnosis.client.llm.LlmRecoveryStageResult;
 import com.likelion.duckswell.domain.diagnosis.client.llm.LlmRoutineCompletionClient;
 import com.likelion.duckswell.domain.diagnosis.client.llm.LlmRoutineCompletionContext;
 import com.likelion.duckswell.domain.diagnosis.client.llm.LlmRoutineCompletionResult;
@@ -32,6 +36,7 @@ import com.likelion.duckswell.domain.routine.entity.RoutineDifficulty;
 import com.likelion.duckswell.domain.routine.service.RoutineService;
 import com.likelion.duckswell.global.exception.CustomException;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -56,6 +61,7 @@ public class DiagnosisService {
     private final LlmDiagnosisClient llmDiagnosisClient;
     private final LlmRoutineStepsClient llmRoutineStepsClient;
     private final LlmRoutineCompletionClient llmRoutineCompletionClient;
+    private final LlmRecoveryStageClient llmRecoveryStageClient;
 
     /**
      * 사진은 여기서 딱 한 번 업로드/저장되고 품질을 확인한다. 통과한 photoId를 제출 시점에 재사용한다.
@@ -112,12 +118,14 @@ public class DiagnosisService {
                 scores = cvAnalysisClient.analyze(photoPath);
             }
 
+            // 데일리 코스는 사진 분석이 선택 사항이라 전날과 비교하지 않고 항상 현재 상태만
+            // 요약한다. 어제 컨텍스트는 FOCUS 코스일 때만 채운다.
             LlmDiagnosisContext context = new LlmDiagnosisContext(
                     photoPath,
                     request.symptoms(),
                     request.symptomNote(),
                     scores,
-                    buildYesterdayContext(request.courseId()),
+                    course.courseType() == CourseType.FOCUS ? buildYesterdayContext(request.courseId()) : null,
                     procedureService.getMyProcedures()
             );
             llmResult = llmDiagnosisClient.analyze(context);
@@ -186,6 +194,35 @@ public class DiagnosisService {
         );
         LlmRoutineCompletionResult result = llmRoutineCompletionClient.summarize(context);
         return routineService.applyCompletion(routineId, result.completionSummaryText());
+    }
+
+    /**
+     * 어제 루틴이 완료된 경우 "어제 요약 + 오늘 회복 단계"를, 아니면 "오늘 회복 단계"만 서술한다.
+     * 어제 기록 기준 캐시된 값이 있으면 LLM을 다시 호출하지 않고 그대로 반환한다
+     * (어제 기록이 없는 경우는 캐싱할 대상 자체가 없어 매 호출마다 새로 생성한다. 코스 첫날처럼 드문 케이스).
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public RecoverySummaryResponse getRecoverySummary(Long courseId) {
+        CourseResponse course = courseService.getCourse(courseId);
+        int dayNumber = (int) ChronoUnit.DAYS.between(course.startedAt(), LocalDate.now()) + 1;
+
+        Optional<RoutineSnapshot> yesterday = routineService.findRoutineSnapshot(courseId, LocalDate.now().minusDays(1));
+        boolean hasYesterday = yesterday.isPresent() && yesterday.get().completedAt() != null;
+
+        if (hasYesterday) {
+            RoutineSnapshot routine = yesterday.get();
+            if (routine.recoveryStageSummaryText() != null) {
+                return new RecoverySummaryResponse(routine.recoveryStageSummaryText());
+            }
+            LlmRecoveryStageResult result = llmRecoveryStageClient.summarize(new LlmRecoveryStageContext(
+                    dayNumber, true, routine.symptoms(), routine.symptomNote(), routine.completionSummaryText()));
+            routineService.cacheRecoveryStageSummary(routine.id(), result.recoveryStageSummaryText());
+            return new RecoverySummaryResponse(result.recoveryStageSummaryText());
+        }
+
+        LlmRecoveryStageResult result = llmRecoveryStageClient.summarize(
+                new LlmRecoveryStageContext(dayNumber, false, List.of(), null, null));
+        return new RecoverySummaryResponse(result.recoveryStageSummaryText());
     }
 
     private DiagnosisErrorCode mapQualityReason(String reason) {

@@ -2,21 +2,39 @@ package com.likelion.duckswell.domain.course.service;
 
 import com.likelion.duckswell.domain.course.dto.CourseResponse;
 import com.likelion.duckswell.domain.course.dto.CourseStartRequest;
+import com.likelion.duckswell.domain.course.dto.CourseSymptomSummaryResponse;
 import com.likelion.duckswell.domain.course.dto.CurrentCourseResponse;
+import com.likelion.duckswell.domain.course.dto.IngredientCandidateResponse;
+import com.likelion.duckswell.domain.course.dto.RecommendedProductResponse;
 import com.likelion.duckswell.domain.course.entity.Course;
 import com.likelion.duckswell.domain.course.entity.CourseStatus;
 import com.likelion.duckswell.domain.course.entity.CourseType;
 import com.likelion.duckswell.domain.course.entity.RoutineType;
 import com.likelion.duckswell.domain.course.entity.RoutineTypeCode;
+import com.likelion.duckswell.domain.course.entity.RoutineTypeIngredient;
 import com.likelion.duckswell.domain.course.exception.CourseErrorCode;
 import com.likelion.duckswell.domain.course.repository.CourseRepository;
+import com.likelion.duckswell.domain.course.repository.RoutineTypeIngredientRepository;
 import com.likelion.duckswell.domain.course.repository.RoutineTypeRepository;
+import com.likelion.duckswell.domain.course.util.SymptomRoutineTypeMapper;
 import com.likelion.duckswell.domain.member.entity.Member;
+import com.likelion.duckswell.domain.product.dto.ProductResponse;
+import com.likelion.duckswell.domain.product.entity.Ingredient;
+import com.likelion.duckswell.domain.product.entity.IngredientTag;
+import com.likelion.duckswell.domain.product.entity.ProductCategory;
+import com.likelion.duckswell.domain.product.repository.IngredientRepository;
+import com.likelion.duckswell.domain.product.repository.IngredientTagRepository;
+import com.likelion.duckswell.domain.product.service.ProductService;
 import com.likelion.duckswell.domain.routine.entity.Routine;
+import com.likelion.duckswell.domain.routine.entity.Symptom;
 import com.likelion.duckswell.domain.routine.repository.RoutineRepository;
+import com.likelion.duckswell.domain.routine.repository.RoutineSymptomRepository;
 import com.likelion.duckswell.global.exception.CustomException;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -29,9 +47,20 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class CourseService {
 
+    private static final int SYMPTOM_LOOKBACK_DAYS = 6;
+
     private final CourseRepository courseRepository;
     private final RoutineTypeRepository routineTypeRepository;
     private final RoutineRepository routineRepository;
+    private final RoutineTypeIngredientRepository routineTypeIngredientRepository;
+    private final IngredientRepository ingredientRepository;
+    private final IngredientTagRepository ingredientTagRepository;
+    private final RoutineSymptomRepository routineSymptomRepository;
+    private final ProductService productService;
+
+    /** category가 null이면 해당 성분의 카테고리 제한 없이 조회한다. RoutineService도 이 타입으로 후보를 넘긴다. */
+    public record ProductPickCandidate(Long ingredientId, ProductCategory category) {
+    }
 
     @Transactional
     public CourseResponse startCourse(CourseStartRequest request) {
@@ -74,6 +103,26 @@ public class CourseService {
     /** 다른 도메인(diagnosis 등)이 courseId만으로 코스 정보를 참조해야 할 때 쓰는 조회용 메서드. */
     public CourseResponse getCourse(Long courseId) {
         return CourseResponse.from(getCourseOrThrow(courseId));
+    }
+
+    /** routineTypeCode가 null(FOCUS 코스)이면 확정 8개 성분 전체를 후보군으로 fallback한다. */
+    public List<IngredientCandidateResponse> getIngredientCandidates(RoutineTypeCode routineTypeCode) {
+        List<Ingredient> ingredients = routineTypeCode != null
+                ? ingredientRepository.findAllById(
+                        routineTypeIngredientRepository.findByRoutineType_Code(routineTypeCode).stream()
+                                .map(RoutineTypeIngredient::getIngredientId)
+                                .toList())
+                : ingredientRepository.findAll();
+
+        return ingredients.stream()
+                .map(ingredient -> new IngredientCandidateResponse(
+                        ingredient.getId(),
+                        ingredient.getName(),
+                        ingredientTagRepository.findByIngredientId(ingredient.getId()).stream()
+                                .map(IngredientTag::getTag)
+                                .toList()
+                ))
+                .toList();
     }
 
     public Optional<CurrentCourseResponse> getCurrentCourse() {
@@ -135,5 +184,55 @@ public class CourseService {
     private Course getCourseOrThrow(Long courseId) {
         return courseRepository.findById(courseId)
                 .orElseThrow(() -> new CustomException(CourseErrorCode.COURSE_NOT_FOUND));
+    }
+
+    /**
+     * 최근 7일(오늘 포함) 증상 중 가장 많이 선택된 키워드 상위 2개(동률이면 이름순 정렬 후 앞 2개)와,
+     * 그 증상들의 매핑 세트를 교집합해 추천하는 데일리 루틴 타입을 함께 반환한다.
+     */
+    public CourseSymptomSummaryResponse getSymptomSummary(Long courseId) {
+        getCourseOrThrow(courseId);
+        List<Symptom> symptoms = routineSymptomRepository.findSymptomsByCourseIdAndDateFrom(
+                courseId, LocalDate.now().minusDays(SYMPTOM_LOOKBACK_DAYS));
+
+        List<CourseSymptomSummaryResponse.SymptomFrequency> topSymptoms = symptoms.stream()
+                .collect(Collectors.groupingBy(symptom -> symptom, Collectors.counting()))
+                .entrySet().stream()
+                .sorted(Map.Entry.<Symptom, Long>comparingByValue().reversed()
+                        .thenComparing(entry -> entry.getKey().name()))
+                .limit(2)
+                .map(entry -> new CourseSymptomSummaryResponse.SymptomFrequency(entry.getKey(), entry.getValue()))
+                .toList();
+
+        RoutineTypeCode recommendedCode = SymptomRoutineTypeMapper.recommend(
+                topSymptoms.stream().map(CourseSymptomSummaryResponse.SymptomFrequency::symptom).toList());
+        String recommendedName = recommendedCode != null
+                ? routineTypeRepository.findById(recommendedCode).map(RoutineType::getName).orElse(null)
+                : null;
+
+        return new CourseSymptomSummaryResponse(topSymptoms, recommendedCode, recommendedName);
+    }
+
+    /**
+     * (성분, 카테고리) 조합마다 상점 제품을 1개씩 뽑는다(개수 상한 없음, 같은 조합 중복 제거).
+     * 해당 조합에 제품이 하나도 없으면 결과에서 그냥 빠진다.
+     */
+    public List<RecommendedProductResponse> pickRecommendedProducts(List<ProductPickCandidate> candidates) {
+        List<RecommendedProductResponse> picked = new ArrayList<>();
+        Set<ProductPickCandidate> seenCandidates = new LinkedHashSet<>();
+        for (ProductPickCandidate candidate : candidates) {
+            if (!seenCandidates.add(candidate)) {
+                continue;
+            }
+            List<ProductResponse> products = productService.getProductsByIngredient(candidate.ingredientId(), candidate.category());
+            if (products.isEmpty()) {
+                continue;
+            }
+            String ingredientName = ingredientRepository.findById(candidate.ingredientId())
+                    .map(Ingredient::getName)
+                    .orElse("성분");
+            picked.add(new RecommendedProductResponse(ingredientName, products.get(0)));
+        }
+        return picked;
     }
 }

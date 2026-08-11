@@ -13,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,7 +55,10 @@ public class RoutineStep {
     @Column(length = 200)
     private String alternateText;
 
+    // id 순으로 명시 정렬 - RoutineService.getStepSummaries()가 첫 번째 성분을 "대표 성분"으로
+    // 쓰기 때문에, 순서 보장 없는 컬렉션에 기대면 조회 시마다 대표 성분이 바뀔 수 있다.
     @OneToMany(mappedBy = "routineStep", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id ASC")
     private List<RoutineStepIngredient> ingredients = new ArrayList<>();
 
     RoutineStep(Routine routine, Integer stepOrder, String stepName, ProductCategory category,

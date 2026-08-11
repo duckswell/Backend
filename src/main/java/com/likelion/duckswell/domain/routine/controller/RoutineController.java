@@ -1,13 +1,16 @@
 package com.likelion.duckswell.domain.routine.controller;
 
+import com.likelion.duckswell.domain.course.dto.RecommendedProductResponse;
 import com.likelion.duckswell.domain.diagnosis.service.DiagnosisService;
 import com.likelion.duckswell.domain.routine.dto.RoutineCompleteResponse;
+import com.likelion.duckswell.domain.routine.dto.RoutineStepSummaryResponse;
 import com.likelion.duckswell.domain.routine.dto.RoutineStepsResponse;
 import com.likelion.duckswell.domain.routine.dto.SelectDifficultyRequest;
 import com.likelion.duckswell.domain.routine.dto.TodayRoutineResponse;
 import com.likelion.duckswell.domain.routine.service.RoutineService;
 import com.likelion.duckswell.global.response.ApiResponse;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,5 +46,17 @@ public class RoutineController implements RoutineApi {
     @PostMapping("/{routineId}/complete")
     public ResponseEntity<ApiResponse<RoutineCompleteResponse>> completeRoutine(@PathVariable Long routineId) {
         return ResponseEntity.ok(ApiResponse.success(diagnosisService.completeRoutine(routineId)));
+    }
+
+    @Override
+    @GetMapping("/{routineId}/steps")
+    public ResponseEntity<ApiResponse<List<RoutineStepSummaryResponse>>> getStepSummaries(@PathVariable Long routineId) {
+        return ResponseEntity.ok(ApiResponse.success(routineService.getStepSummaries(routineId)));
+    }
+
+    @Override
+    @GetMapping("/{routineId}/recommended-products")
+    public ResponseEntity<ApiResponse<List<RecommendedProductResponse>>> getRecommendedProducts(@PathVariable Long routineId) {
+        return ResponseEntity.ok(ApiResponse.success(routineService.getRecommendedProducts(routineId)));
     }
 }

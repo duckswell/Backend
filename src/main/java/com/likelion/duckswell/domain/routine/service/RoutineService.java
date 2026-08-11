@@ -1,18 +1,16 @@
 package com.likelion.duckswell.domain.routine.service;
 
+import com.likelion.duckswell.domain.course.dto.RecommendedProductResponse;
 import com.likelion.duckswell.domain.course.entity.RoutineTypeCode;
-import com.likelion.duckswell.domain.course.entity.RoutineTypeIngredient;
-import com.likelion.duckswell.domain.course.repository.RoutineTypeIngredientRepository;
 import com.likelion.duckswell.domain.course.service.CourseService;
 import com.likelion.duckswell.domain.diagnosis.client.llm.LlmRoutineCompletionContext;
 import com.likelion.duckswell.domain.diagnosis.client.llm.LlmRoutineStepsContext.IngredientCandidate;
 import com.likelion.duckswell.domain.diagnosis.client.llm.LlmRoutineStepsResult;
 import com.likelion.duckswell.domain.product.entity.Ingredient;
-import com.likelion.duckswell.domain.product.entity.IngredientTag;
 import com.likelion.duckswell.domain.product.repository.IngredientRepository;
-import com.likelion.duckswell.domain.product.repository.IngredientTagRepository;
 import com.likelion.duckswell.domain.routine.dto.RoutineCompleteResponse;
 import com.likelion.duckswell.domain.routine.dto.RoutineSnapshot;
+import com.likelion.duckswell.domain.routine.dto.RoutineStepSummaryResponse;
 import com.likelion.duckswell.domain.routine.dto.RoutineStepsResponse;
 import com.likelion.duckswell.domain.routine.entity.IngredientRole;
 import com.likelion.duckswell.domain.routine.entity.Routine;
@@ -36,9 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class RoutineService {
 
     private final RoutineRepository routineRepository;
-    private final RoutineTypeIngredientRepository routineTypeIngredientRepository;
     private final IngredientRepository ingredientRepository;
-    private final IngredientTagRepository ingredientTagRepository;
     private final CourseService courseService;
 
     /** 하루에 여러 번 기록될 수 있다 - 항상 새 row로 남긴다(수정/덮어쓰기 아님). */
@@ -71,23 +67,10 @@ public class RoutineService {
                 .map(Routine::getId);
     }
 
-    /** routineTypeCode가 null(FOCUS 코스)이면 확정 8개 성분 전체를 후보군으로 fallback한다. */
+    /** 실제 조회 로직은 CourseService.getIngredientCandidates()로 이전됨 - 여기서는 LLM 컨텍스트용 타입으로 변환만 한다. */
     public List<IngredientCandidate> resolveIngredientCandidates(RoutineTypeCode routineTypeCode) {
-        List<Ingredient> ingredients = routineTypeCode != null
-                ? ingredientRepository.findAllById(
-                        routineTypeIngredientRepository.findByRoutineType_Code(routineTypeCode).stream()
-                                .map(RoutineTypeIngredient::getIngredientId)
-                                .toList())
-                : ingredientRepository.findAll();
-
-        return ingredients.stream()
-                .map(ingredient -> new IngredientCandidate(
-                        ingredient.getId(),
-                        ingredient.getName(),
-                        ingredientTagRepository.findByIngredientId(ingredient.getId()).stream()
-                                .map(IngredientTag::getTag)
-                                .toList()
-                ))
+        return courseService.getIngredientCandidates(routineTypeCode).stream()
+                .map(candidate -> new IngredientCandidate(candidate.ingredientId(), candidate.name(), candidate.tags()))
                 .toList();
     }
 
@@ -141,6 +124,41 @@ public class RoutineService {
                 .toList();
 
         return RoutineCompleteResponse.of(routine, recommendedIngredients);
+    }
+
+    /**
+     * 클렌징 스텝(성분 없음)은 자연스럽게 제외되고, 나머지 스텝의 (성분, 카테고리) 조합마다
+     * 상점 제품을 1개씩 뽑아 평평한 리스트로 반환한다(개수 상한 없음).
+     */
+    public List<RecommendedProductResponse> getRecommendedProducts(Long routineId) {
+        Routine routine = getRoutineOrThrow(routineId);
+        List<CourseService.ProductPickCandidate> candidates = routine.getSteps().stream()
+                .flatMap(step -> step.getIngredients().stream()
+                        .map(ingredient -> new CourseService.ProductPickCandidate(ingredient.getIngredientId(), step.getCategory())))
+                .toList();
+        return courseService.pickRecommendedProducts(candidates);
+    }
+
+    /** 스텝마다 대표(첫번째) 성분의 id/이름 + 제품 종류만 요약해서 반환한다(클렌징처럼 성분이 없으면 둘 다 null). */
+    public List<RoutineStepSummaryResponse> getStepSummaries(Long routineId) {
+        Routine routine = getRoutineOrThrow(routineId);
+        return routine.getSteps().stream()
+                .map(step -> {
+                    boolean hasIngredient = !step.getIngredients().isEmpty();
+                    Long ingredientId = hasIngredient ? step.getIngredients().get(0).getIngredientId() : null;
+                    return new RoutineStepSummaryResponse(
+                            step.getId(),
+                            step.getStepName(),
+                            step.getCategory(),
+                            ingredientId,
+                            hasIngredient ? resolveIngredientName(ingredientId) : null);
+                })
+                .toList();
+    }
+
+    @Transactional
+    public void cacheRecoveryStageSummary(Long routineId, String recoveryStageSummaryText) {
+        getRoutineOrThrow(routineId).cacheRecoveryStageSummary(recoveryStageSummaryText);
     }
 
     private String resolveIngredientName(Long ingredientId) {
