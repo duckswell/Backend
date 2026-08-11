@@ -65,6 +65,10 @@ public class LlmRoutineStepsClient {
                     + "application-prod.yml에 채워주세요.");
             throw new CustomException(DiagnosisErrorCode.LLM_RESPONSE_INVALID);
         }
+        if (context.candidates() == null || context.candidates().isEmpty()) {
+            log.error("성분 후보군이 비어 있어 루틴 스텝 스키마를 만들 수 없습니다. routine_type_ingredient 시드를 확인하세요.");
+            throw new CustomException(DiagnosisErrorCode.LLM_RESPONSE_INVALID);
+        }
 
         ObjectNode requestBody = buildRequestBody(context);
 
@@ -314,10 +318,14 @@ public class LlmRoutineStepsClient {
             String alternate_ingredient_name
     ) {
         LlmRoutineStepsResult.StepResult toResult(Map<Long, String> namesById) {
-            List<String> names = ingredient_ids.stream().map(namesById::get).toList();
+            List<Long> validIds = ingredient_ids.stream().filter(namesById::containsKey).toList();
+            if (validIds.isEmpty()) {
+                throw new IllegalStateException("후보군에 없는 ingredient_id만 반환되었습니다: " + ingredient_ids);
+            }
+            List<String> names = validIds.stream().map(namesById::get).toList();
             String productText = "%s 성분의 %s".formatted(String.join("·", names), product_type);
             String alternateText = buildAlternateText(names, alternate_ingredient_name);
-            return new LlmRoutineStepsResult.StepResult(step_name, productText, method_text, alternateText, ingredient_ids);
+            return new LlmRoutineStepsResult.StepResult(step_name, productText, method_text, alternateText, validIds);
         }
 
         private String buildAlternateText(List<String> primaryNames, String altName) {
