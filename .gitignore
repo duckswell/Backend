@@ -46,3 +46,6 @@ application-local.yml
 
 ### 사용자 업로드 사진 (개인정보, 로컬 개발용 더미 데이터) ###
 /uploads/
+
+### 로컬 실행 로그 ###
+*.log

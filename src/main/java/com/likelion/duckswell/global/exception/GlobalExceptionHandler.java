@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -36,6 +37,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiResponse<Void>> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
         log.warn("MethodArgumentTypeMismatchException: {}", e.getMessage());
+        return ResponseEntity.status(CommonErrorCode.INVALID_INPUT_VALUE.getStatus())
+                .body(ApiResponse.fail(CommonErrorCode.INVALID_INPUT_VALUE.getCode(), CommonErrorCode.INVALID_INPUT_VALUE.getMessage()));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
+        log.warn("MissingServletRequestParameterException: {}", e.getMessage());
         return ResponseEntity.status(CommonErrorCode.INVALID_INPUT_VALUE.getStatus())
                 .body(ApiResponse.fail(CommonErrorCode.INVALID_INPUT_VALUE.getCode(), CommonErrorCode.INVALID_INPUT_VALUE.getMessage()));
     }
