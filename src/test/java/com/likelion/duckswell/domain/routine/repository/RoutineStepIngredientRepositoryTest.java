@@ -35,17 +35,17 @@ class RoutineStepIngredientRepositoryTest {
     void 빈도가_같으면_더_최근에_추천된_성분이_먼저_정렬된다() {
         // given: C는 2회 추천되어 1순위, A와 B는 1회씩으로 동점이지만 B가 더 최근 루틴에서 추천됨
         Routine routine1 = new Routine(DUMMY_COURSE_ID, LocalDate.now().minusDays(3), null, null);
-        routine1.addStep(1, "스텝1", null).addIngredient(INGREDIENT_A, IngredientRole.PRIMARY);
+        routine1.addStep(1, "스텝1", null, null, null).addIngredient(INGREDIENT_A, IngredientRole.PRIMARY);
         routineRepository.save(routine1);
 
         Routine routine2 = new Routine(DUMMY_COURSE_ID, LocalDate.now().minusDays(2), null, null);
-        routine2.addStep(1, "스텝1", null).addIngredient(INGREDIENT_C, IngredientRole.PRIMARY);
+        routine2.addStep(1, "스텝1", null, null, null).addIngredient(INGREDIENT_C, IngredientRole.PRIMARY);
         routineRepository.save(routine2);
 
         Routine routine3 = new Routine(DUMMY_COURSE_ID, LocalDate.now().minusDays(1), null, null);
-        RoutineStep step3 = routine3.addStep(1, "스텝1", null);
+        RoutineStep step3 = routine3.addStep(1, "스텝1", null, null, null);
         step3.addIngredient(INGREDIENT_C, IngredientRole.PRIMARY);
-        routine3.addStep(2, "스텝2", null).addIngredient(INGREDIENT_B, IngredientRole.PRIMARY);
+        routine3.addStep(2, "스텝2", null, null, null).addIngredient(INGREDIENT_B, IngredientRole.PRIMARY);
         routineRepository.save(routine3);
 
         entityManager.flush();

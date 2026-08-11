@@ -37,17 +37,25 @@ public class RoutineStep {
     @Column(nullable = false, length = 50)
     private String stepName;
 
+    @Column(length = 150)
+    private String productText;
+
     @Column(length = 300)
     private String methodText;
+
+    @Column(length = 200)
+    private String alternateText;
 
     @OneToMany(mappedBy = "routineStep", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RoutineStepIngredient> ingredients = new ArrayList<>();
 
-    RoutineStep(Routine routine, Integer stepOrder, String stepName, String methodText) {
+    RoutineStep(Routine routine, Integer stepOrder, String stepName, String productText, String methodText, String alternateText) {
         this.routine = routine;
         this.stepOrder = stepOrder;
         this.stepName = stepName;
+        this.productText = productText;
         this.methodText = methodText;
+        this.alternateText = alternateText;
     }
 
     public void addIngredient(Long ingredientId, IngredientRole role) {

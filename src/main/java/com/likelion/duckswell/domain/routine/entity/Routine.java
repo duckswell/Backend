@@ -76,10 +76,15 @@ public class Routine extends BaseEntity {
         this.reasonText = reasonText;
     }
 
-    public RoutineStep addStep(int order, String stepName, String methodText) {
-        RoutineStep step = new RoutineStep(this, order, stepName, methodText);
+    public RoutineStep addStep(int order, String stepName, String productText, String methodText, String alternateText) {
+        RoutineStep step = new RoutineStep(this, order, stepName, productText, methodText, alternateText);
         steps.add(step);
         return step;
+    }
+
+    /** 난이도를 다시 선택할 때 이전 생성 결과를 지우는 용도 - orphanRemoval로 기존 스텝 row도 함께 삭제된다. */
+    public void resetSteps() {
+        steps.clear();
     }
 
     public void complete(String completionSummaryText) {
