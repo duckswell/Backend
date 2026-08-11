@@ -8,7 +8,9 @@ import com.likelion.duckswell.domain.dashboard.dto.WeatherCareTriggerFactor;
 import com.likelion.duckswell.domain.dashboard.dto.WeatherIndicatorCard;
 import com.likelion.duckswell.domain.weather.dto.WeatherResponse;
 import com.likelion.duckswell.domain.weather.service.WeatherService;
+import java.util.Comparator;
 import java.util.Optional;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -52,22 +54,40 @@ public class WeatherCareBannerService {
     }
 
     private WeatherCareTriggerFactor resolveTriggerFactor(WeatherResponse weather) {
-        if (weather.uvIndex() >= UV_VERY_HIGH_THRESHOLD) {
+        return Stream.of(
+                        resolveUvFactor(weather.uvIndex()),
+                        resolveHumidityFactor(weather.humidity()),
+                        resolveDustFactor(weather.pm10())
+                )
+                .max(Comparator.comparingInt(WeatherCareTriggerFactor::getSeverity))
+                .orElse(WeatherCareTriggerFactor.ALL_GOOD);
+    }
+
+    private WeatherCareTriggerFactor resolveUvFactor(double uvIndex) {
+        if (uvIndex >= UV_VERY_HIGH_THRESHOLD) {
             return WeatherCareTriggerFactor.UV_VERY_HIGH_OR_EXTREME;
         }
-        if (weather.uvIndex() >= UV_HIGH_THRESHOLD) {
+        if (uvIndex >= UV_HIGH_THRESHOLD) {
             return WeatherCareTriggerFactor.UV_HIGH;
         }
-        if (weather.humidity() < HUMIDITY_VERY_LOW_THRESHOLD) {
+        return WeatherCareTriggerFactor.ALL_GOOD;
+    }
+
+    private WeatherCareTriggerFactor resolveHumidityFactor(int humidity) {
+        if (humidity < HUMIDITY_VERY_LOW_THRESHOLD) {
             return WeatherCareTriggerFactor.HUMIDITY_VERY_LOW;
         }
-        if (weather.humidity() >= HUMIDITY_VERY_HIGH_THRESHOLD) {
+        if (humidity >= HUMIDITY_VERY_HIGH_THRESHOLD) {
             return WeatherCareTriggerFactor.HUMIDITY_VERY_HIGH;
         }
-        if (weather.pm10() > DUST_BAD_THRESHOLD) {
+        return WeatherCareTriggerFactor.ALL_GOOD;
+    }
+
+    private WeatherCareTriggerFactor resolveDustFactor(double pm10) {
+        if (pm10 > DUST_BAD_THRESHOLD) {
             return WeatherCareTriggerFactor.DUST_VERY_BAD;
         }
-        if (weather.pm10() > DUST_MODERATE_THRESHOLD) {
+        if (pm10 > DUST_MODERATE_THRESHOLD) {
             return WeatherCareTriggerFactor.DUST_BAD;
         }
         return WeatherCareTriggerFactor.ALL_GOOD;

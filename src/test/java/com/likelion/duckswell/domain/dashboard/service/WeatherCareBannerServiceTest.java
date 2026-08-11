@@ -81,7 +81,33 @@ class WeatherCareBannerServiceTest {
     }
 
     @Test
-    void 자외선이_매우높음이면_외출자제_문구가_최우선으로_노출된다() {
+    void 습도_매우낮음이_심각도가_더_높아서_자외선_높음보다_우선한다() {
+        // given
+        givenDailyCourseWithWeather(weather(6.0, 20, 10));
+
+        // when
+        WeatherCareBannerResponse banner = weatherCareBannerService.getBanner(null, null).orElseThrow();
+
+        // then
+        assertThat(banner.summaryMessage()).isEqualTo("오늘은 피부가 쉽게 건조해질 수 있어요");
+        assertThat(banner.triggerFactor()).isEqualTo("습도 매우낮음");
+    }
+
+    @Test
+    void 미세먼지_매우나쁨이_심각도가_더_높아서_자외선_높음보다_우선한다() {
+        // given
+        givenDailyCourseWithWeather(weather(6.0, 50, 200));
+
+        // when
+        WeatherCareBannerResponse banner = weatherCareBannerService.getBanner(null, null).orElseThrow();
+
+        // then
+        assertThat(banner.summaryMessage()).isEqualTo("오늘은 야외 활동을 가능한 줄여 주세요");
+        assertThat(banner.triggerFactor()).isEqualTo("미세먼지 매우나쁨");
+    }
+
+    @Test
+    void 심각도가_동일하면_자외선_습도_미세먼지_순으로_우선한다() {
         // given
         givenDailyCourseWithWeather(weather(8.0, 20, 200));
 
@@ -91,19 +117,6 @@ class WeatherCareBannerServiceTest {
         // then
         assertThat(banner.summaryMessage()).isEqualTo("오늘은 한낮의 야외 활동을 줄여 주세요");
         assertThat(banner.triggerFactor()).isEqualTo("자외선 매우높음·위험");
-    }
-
-    @Test
-    void 자외선이_높음이면_습도_매우낮음보다_우선한다() {
-        // given
-        givenDailyCourseWithWeather(weather(6.0, 20, 10));
-
-        // when
-        WeatherCareBannerResponse banner = weatherCareBannerService.getBanner(null, null).orElseThrow();
-
-        // then
-        assertThat(banner.summaryMessage()).isEqualTo("오늘은 햇빛으로부터 피부를 보호해 주세요");
-        assertThat(banner.triggerFactor()).isEqualTo("자외선 높음");
     }
 
     @Test
