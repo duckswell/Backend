@@ -35,11 +35,13 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -77,7 +79,11 @@ public class DiagnosisService {
                 photoStorage.cleanupResolvedPath(resolvedPath);
             }
             if (!accepted) {
-                photoStorage.delete(photoId);
+                try {
+                    photoStorage.delete(photoId);
+                } catch (RuntimeException e) {
+                    log.warn("품질 체크 실패한 사진 삭제 실패: photoId={}", photoId, e);
+                }
             }
         }
     }
@@ -173,7 +179,9 @@ public class DiagnosisService {
         LlmRoutineCompletionContext context = new LlmRoutineCompletionContext(
                 course.courseType(),
                 course.routineTypeName(),
-                course.courseType() == CourseType.DAILY ? courseService.getStreakDaysIncludingToday(routine.courseId()) : null,
+                course.courseType() == CourseType.DAILY
+                        ? courseService.getStreakDaysAssumingCompleted(routine.courseId(), routine.routineDate())
+                        : null,
                 completedSteps
         );
         LlmRoutineCompletionResult result = llmRoutineCompletionClient.summarize(context);
