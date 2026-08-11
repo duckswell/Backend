@@ -100,7 +100,8 @@ public class RoutineService {
         int order = 1;
         for (LlmRoutineStepsResult.StepResult stepResult : result.steps()) {
             RoutineStep step = routine.addStep(
-                    order++, stepResult.stepName(), stepResult.productText(), stepResult.methodText(), stepResult.alternateText());
+                    order++, stepResult.stepName(), stepResult.category(),
+                    stepResult.productText(), stepResult.methodText(), stepResult.alternateText());
             for (Long ingredientId : stepResult.ingredientIds()) {
                 step.addIngredient(ingredientId, IngredientRole.PRIMARY);
             }

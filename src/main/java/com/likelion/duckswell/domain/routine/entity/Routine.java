@@ -1,5 +1,6 @@
 package com.likelion.duckswell.domain.routine.entity;
 
+import com.likelion.duckswell.domain.product.entity.ProductCategory;
 import com.likelion.duckswell.global.entity.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -76,8 +77,9 @@ public class Routine extends BaseEntity {
         this.reasonText = reasonText;
     }
 
-    public RoutineStep addStep(int order, String stepName, String productText, String methodText, String alternateText) {
-        RoutineStep step = new RoutineStep(this, order, stepName, productText, methodText, alternateText);
+    public RoutineStep addStep(int order, String stepName, ProductCategory category,
+            String productText, String methodText, String alternateText) {
+        RoutineStep step = new RoutineStep(this, order, stepName, category, productText, methodText, alternateText);
         steps.add(step);
         return step;
     }

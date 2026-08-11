@@ -1,5 +1,6 @@
 package com.likelion.duckswell.domain.routine.dto;
 
+import com.likelion.duckswell.domain.product.entity.ProductCategory;
 import com.likelion.duckswell.domain.routine.entity.RoutineStep;
 import java.util.List;
 
@@ -7,6 +8,7 @@ public record RoutineStepResponse(
         Long stepId,
         Integer order,
         String stepName,
+        ProductCategory category,
         String productText,
         String methodText,
         String alternateText,
@@ -17,6 +19,7 @@ public record RoutineStepResponse(
                 step.getId(),
                 step.getStepOrder(),
                 step.getStepName(),
+                step.getCategory(),
                 step.getProductText(),
                 step.getMethodText(),
                 step.getAlternateText(),

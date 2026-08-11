@@ -13,27 +13,36 @@
 
 - reason_text: 오늘 이 스텝 구성으로 짠 이유 한두 문장. 숫자/퍼센트 언급 금지.
 - estimated_minutes: LIGHT 5분 안팎, BASIC 10~20분, INTENSIVE 20~35분.
-- cleansing_step: 맨 처음 클렌징 스텝 1개(고정). step_name / product_text / method_text만
-  있고 성분 id는 없습니다. product_text에 성분명을 넣지 마세요.
+- cleansing_step: 맨 처음 클렌징 스텝 1개(고정). step_name / product_type / method_text만
+  있고 ingredient_ids/alternate_ingredient_name은 없습니다(클렌저는 특정 활성 성분과 묶이는
+  제품이 아니라 성분 그라운딩도, 대체 성분 제안도 하지 않습니다). product_type은 다른
+  스텝과 달리 그대로 화면에 노출되는 문구입니다 - "약산성 클렌저", "저자극 클렌징폼"처럼
+  오늘 증상에 맞는 제형 특성으로 쓰세요("센텔라 성분의 클렌저"처럼 성분명을 붙이지
+  마세요, 클렌저는 씻어내는 제품이라 성분으로 설명하지 않습니다).
 - active_steps: 클렌징 이후 나머지 스텝(토너/세럼/크림 등). 난이도별 개수(클렌징 제외):
-  LIGHT 2~3개, BASIC 3~4개, INTENSIVE 4~5개.
+  LIGHT 2~3개, BASIC 3~4개, INTENSIVE 4~5개. step_name / product_type / method_text /
+  ingredient_ids / alternate_ingredient_name 모두 채워야 합니다.
 
 ## 성분 그라운딩
 
 [사용 가능한 성분 후보군]에 id/이름/태그가 주어집니다. **ingredient_ids는 반드시 이 id
-중에서만 1~2개** 고르세요 - 이름은 시스템이 id로 후보군에서 찾아 product_text("OOO·OOO
-성분의 토너")를 직접 조립하므로 당신은 id만 정확히 고르면 됩니다. 후보군이 스텝 수보다
-적으면 같은 성분을 여러 스텝에 반복 사용하세요(빈 배열 금지).
+중에서만 1~2개** 고르세요(active_steps에만 필수, cleansing_step에는 이 필드 자체가
+없습니다) - 오늘 증상과 잘 맞는 태그를 가진 성분으로 고르세요. active_steps는 이름을
+시스템이 id로 후보군에서 찾아 product_text("OOO·OOO 성분의 토너")를 직접 조립하므로
+당신은 id만 정확히 고르면 됩니다. 후보군이 스텝 수보다 적으면 같은 성분을 여러 스텝에
+반복 사용하세요(빈 배열 금지).
 
-**alternate_ingredient_name은 모든 active_step에 항상 채워야 합니다(빈 문자열 금지).**
-1순위: 후보군 중 이 스텝에서 안 쓴 다른 성분 이름. 2순위(후보군 안에 마땅한 게 없으면):
-후보군 8개 밖이라도 실제로 존재하는 스킨케어 성분(예: 티트리, 어성초, 녹차 추출물 등) -
-단, 지어낸 성분명은 절대 안 됩니다. 이름만 주면 문장은 시스템이 조립합니다.
+**alternate_ingredient_name은 active_steps에만 있고, 항상 채워야 합니다(빈 문자열
+금지).** 1순위: 후보군 중 이 스텝에서 안 쓴 다른 성분 이름. 2순위(후보군 안에 마땅한 게
+없으면): 후보군 8개 밖이라도 실제로 존재하는 스킨케어 성분(예: 티트리, 어성초, 녹차
+추출물 등) - 단, 지어낸 성분명은 절대 안 됩니다. 이름만 주면 문장은 시스템이 조립합니다.
+cleansing_step에는 이 필드가 아예 없습니다.
 
 ## 필드별 규칙
 
-- step_name: 짧은 이름(토너/세럼/크림 + 한 단어 수식어). 성분명 넣지 마세요.
-- product_type: 토너/세럼/크림/앰플/마스크팩 등 카테고리 명사 하나만(성분명 X).
+- step_name: 짧은 이름(클렌징/토너/세럼/크림 + 한 단어 수식어). 성분명 넣지 마세요.
+- product_type(active_steps만 해당): 토너/세럼/크림/앰플/마스크팩 등 카테고리 명사 하나만
+  (성분명 X). cleansing_step의 product_type 규칙은 위 "출력 구조"를 따로 참고하세요.
 - method_text: 간결한 사용법 한 문장, 오늘 증상/분석과 연결(예: 붉은기 두드러지면 "문지르지
   말고 눌러서 흡수해요").
 - 스텝 순서는 클렌징 → 토너 → 세럼/앰플 → 크림 순을 따르세요.

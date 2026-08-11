@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.likelion.duckswell.domain.diagnosis.client.llm.LlmRoutineStepsContext.IngredientCandidate;
 import com.likelion.duckswell.domain.diagnosis.exception.DiagnosisErrorCode;
 import com.likelion.duckswell.domain.procedure.dto.ProcedureResponse;
+import com.likelion.duckswell.domain.product.entity.ProductCategory;
 import com.likelion.duckswell.domain.routine.entity.RoutineDifficulty;
 import com.likelion.duckswell.domain.routine.entity.Symptom;
 import com.likelion.duckswell.global.exception.CustomException;
@@ -196,33 +197,8 @@ public class LlmRoutineStepsClient {
     }
 
     private ObjectNode buildJsonSchema(LlmRoutineStepsContext context) {
-        ObjectNode cleansingStepSchema = objectMapper.createObjectNode();
-        cleansingStepSchema.put("type", "object");
-        ObjectNode cleansingProperties = objectMapper.createObjectNode();
-        cleansingProperties.set("step_name", stringType());
-        cleansingProperties.set("product_text", stringType());
-        cleansingProperties.set("method_text", stringType());
-        cleansingStepSchema.set("properties", cleansingProperties);
-        cleansingStepSchema.set("required", stringArray("step_name", "product_text", "method_text"));
-        cleansingStepSchema.put("additionalProperties", false);
-
-        ObjectNode ingredientIdsArray = objectMapper.createObjectNode();
-        ingredientIdsArray.put("type", "array");
-        ingredientIdsArray.set("items", integerEnum(context.candidates()));
-        ingredientIdsArray.put("minItems", 1);
-        ingredientIdsArray.put("maxItems", 2);
-
-        ObjectNode activeStepSchema = objectMapper.createObjectNode();
-        activeStepSchema.put("type", "object");
-        ObjectNode activeProperties = objectMapper.createObjectNode();
-        activeProperties.set("step_name", stringType());
-        activeProperties.set("product_type", stringType());
-        activeProperties.set("method_text", stringType());
-        activeProperties.set("ingredient_ids", ingredientIdsArray);
-        activeProperties.set("alternate_ingredient_name", stringType());
-        activeStepSchema.set("properties", activeProperties);
-        activeStepSchema.set("required", stringArray("step_name", "product_type", "method_text", "ingredient_ids", "alternate_ingredient_name"));
-        activeStepSchema.put("additionalProperties", false);
+        ObjectNode cleansingStepSchema = buildCleansingStepSchema();
+        ObjectNode activeStepSchema = buildStepSchema(context.candidates());
 
         int[] activeStepCountRange = activeStepCountRange(context.difficulty());
         ObjectNode activeStepsArray = objectMapper.createObjectNode();
@@ -243,6 +219,53 @@ public class LlmRoutineStepsClient {
         root.set("required", stringArray("reason_text", "estimated_minutes", "cleansing_step", "active_steps"));
         root.put("additionalProperties", false);
         return root;
+    }
+
+    /** 클렌저는 성분이 아니라 제형 특성(약산성 등)으로 설명하는 제품이라 성분 그라운딩 자체를 하지 않는다. */
+    private ObjectNode buildCleansingStepSchema() {
+        ObjectNode stepSchema = objectMapper.createObjectNode();
+        stepSchema.put("type", "object");
+        ObjectNode properties = objectMapper.createObjectNode();
+        properties.set("step_name", stringType());
+        properties.set("category", productCategoryEnum());
+        properties.set("product_type", stringType());
+        properties.set("method_text", stringType());
+        stepSchema.set("properties", properties);
+        stepSchema.set("required", stringArray("step_name", "category", "product_type", "method_text"));
+        stepSchema.put("additionalProperties", false);
+        return stepSchema;
+    }
+
+    private ObjectNode buildStepSchema(List<IngredientCandidate> candidates) {
+        ObjectNode ingredientIdsArray = objectMapper.createObjectNode();
+        ingredientIdsArray.put("type", "array");
+        ingredientIdsArray.set("items", integerEnum(candidates));
+        ingredientIdsArray.put("minItems", 1);
+        ingredientIdsArray.put("maxItems", 2);
+
+        ObjectNode stepSchema = objectMapper.createObjectNode();
+        stepSchema.put("type", "object");
+        ObjectNode properties = objectMapper.createObjectNode();
+        properties.set("step_name", stringType());
+        properties.set("category", productCategoryEnum());
+        properties.set("product_type", stringType());
+        properties.set("method_text", stringType());
+        properties.set("ingredient_ids", ingredientIdsArray);
+        properties.set("alternate_ingredient_name", stringType());
+        stepSchema.set("required", stringArray("step_name", "category", "product_type", "method_text", "ingredient_ids", "alternate_ingredient_name"));
+        stepSchema.set("properties", properties);
+        stepSchema.put("additionalProperties", false);
+        return stepSchema;
+    }
+
+    /** 상점 제품 조회용 고정 분류 - ProductCategory enum과 완전히 일치시킨다. */
+    private ObjectNode productCategoryEnum() {
+        ObjectNode node = objectMapper.createObjectNode().put("type", "string");
+        ArrayNode enumArray = node.putArray("enum");
+        for (ProductCategory category : ProductCategory.values()) {
+            enumArray.add(category.name());
+        }
+        return node;
     }
 
     /** 첫 클렌징 스텝은 별도 필드로 고정하고, 여기 범위는 클렌징을 제외한 나머지 스텝 수. */
@@ -304,28 +327,39 @@ public class LlmRoutineStepsClient {
         }
     }
 
-    private record CleansingStepJson(String step_name, String product_text, String method_text) {
+    /**
+     * 클렌저는 "OOO 성분의 클렌저" 식으로 성분명을 내세워 설명하지 않는다(약산성/저자극 등
+     * 제형 특성으로 설명하는 게 자연스러움) - product_type을 그대로 노출 텍스트로 쓴다.
+     * 특정 활성 성분과 묶이는 제품이 아니라서 ingredient_ids 자체를 grounding하지 않는다
+     * (상점 제품 추천은 category만으로 조회).
+     */
+    private record CleansingStepJson(
+            String step_name,
+            String category,
+            String product_type,
+            String method_text
+    ) {
         LlmRoutineStepsResult.StepResult toResult() {
-            return new LlmRoutineStepsResult.StepResult(step_name, product_text, method_text, null, List.of());
+            return new LlmRoutineStepsResult.StepResult(
+                    step_name, ProductCategory.valueOf(category), product_type, method_text, null, List.of());
         }
     }
 
     private record ActiveStepJson(
             String step_name,
+            String category,
             String product_type,
             String method_text,
             List<Long> ingredient_ids,
             String alternate_ingredient_name
     ) {
         LlmRoutineStepsResult.StepResult toResult(Map<Long, String> namesById) {
-            List<Long> validIds = ingredient_ids.stream().filter(namesById::containsKey).toList();
-            if (validIds.isEmpty()) {
-                throw new IllegalStateException("후보군에 없는 ingredient_id만 반환되었습니다: " + ingredient_ids);
-            }
+            List<Long> validIds = resolveValidIds(ingredient_ids, namesById);
             List<String> names = validIds.stream().map(namesById::get).toList();
-            String productText = "%s 성분의 %s".formatted(String.join("·", names), product_type);
+            String productText = buildProductText(names, product_type);
             String alternateText = buildAlternateText(names, alternate_ingredient_name);
-            return new LlmRoutineStepsResult.StepResult(step_name, productText, method_text, alternateText, validIds);
+            return new LlmRoutineStepsResult.StepResult(
+                    step_name, ProductCategory.valueOf(category), productText, method_text, alternateText, validIds);
         }
 
         private String buildAlternateText(List<String> primaryNames, String altName) {
@@ -345,6 +379,18 @@ public class LlmRoutineStepsClient {
             }
             return (last - 0xAC00) % 28 != 0 ? withBatchim : withoutBatchim;
         }
+    }
+
+    private static List<Long> resolveValidIds(List<Long> ingredientIds, Map<Long, String> namesById) {
+        List<Long> validIds = ingredientIds.stream().filter(namesById::containsKey).toList();
+        if (validIds.isEmpty()) {
+            throw new IllegalStateException("후보군에 없는 ingredient_id만 반환되었습니다: " + ingredientIds);
+        }
+        return validIds;
+    }
+
+    private static String buildProductText(List<String> names, String productType) {
+        return "%s 성분의 %s".formatted(String.join("·", names), productType);
     }
 
     private String loadSystemPrompt() {

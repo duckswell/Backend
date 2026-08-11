@@ -40,6 +40,13 @@ public interface RoutineApi {
                     응답의 각 스텝은 productText(제품+성분 조합)/methodText(사용법)/
                     alternateText(대체 성분 안내, 클렌징 제외 항상 채워짐)를 포함합니다.
 
+                    category는 ProductCategory(CLEANSER/SKIN_TONER/AMPOULE_SERUM/CREAM/MIST_OIL)
+                    값이며, 이 스텝에서 추천할 상점 제품을 카테고리로 좁혀 조회할 때 씁니다.
+
+                    ingredientId는 sql/seed_shop_demo.sql 시드 순서 기준 고정값입니다:
+                    1=비타민C, 2=나이아신아마이드, 3=히알루론산, 4=세라마이드, 5=판테놀,
+                    6=센텔라, 7=알로에, 8=징크PCA.
+
                     이미 난이도를 선택한 루틴에 다시 호출하면(재선택), 이전에 생성됐던 스텝은
                     전부 지워지고 새로 생성된 스텝으로 교체됩니다.
                     """
