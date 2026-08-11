@@ -1,8 +1,8 @@
 package com.likelion.duckswell.domain.procedure.dto;
 
 import com.likelion.duckswell.domain.procedure.entity.ProcedureAreaType;
+import com.likelion.duckswell.domain.procedure.entity.ProcedureType;
 import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -10,8 +10,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 public record ProcedureItemRequest(
-        @NotBlank(message = "시술 종류는 필수입니다.")
-        String procedureType,
+        @NotNull(message = "시술 종류는 필수입니다.")
+        ProcedureType procedureType,
 
         @NotNull(message = "시술 일자는 필수입니다.")
         LocalDate procedureDate,

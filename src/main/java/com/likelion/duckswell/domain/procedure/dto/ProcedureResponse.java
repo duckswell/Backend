@@ -3,12 +3,14 @@ package com.likelion.duckswell.domain.procedure.dto;
 import com.likelion.duckswell.domain.procedure.entity.Procedure;
 import com.likelion.duckswell.domain.procedure.entity.ProcedureArea;
 import com.likelion.duckswell.domain.procedure.entity.ProcedureAreaType;
+import com.likelion.duckswell.domain.procedure.entity.ProcedureType;
 import java.time.LocalDate;
 import java.util.List;
 
 public record ProcedureResponse(
         Long id,
-        String procedureType,
+        ProcedureType procedureType,
+        String procedureTypeName,
         LocalDate procedureDate,
         Integer currentCount,
         Integer totalCount,
@@ -18,6 +20,7 @@ public record ProcedureResponse(
         return new ProcedureResponse(
                 procedure.getId(),
                 procedure.getProcedureType(),
+                procedure.getProcedureType().getDisplayName(),
                 procedure.getProcedureDate(),
                 procedure.getCurrentCount(),
                 procedure.getTotalCount(),
