@@ -5,6 +5,7 @@ import com.likelion.duckswell.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "Dashboard", description = "홈 화면 대시보드 API")
 public interface DashboardApi {
@@ -24,5 +25,8 @@ public interface DashboardApi {
                     데일리 코스가 진행 중일 때만 배너를 노출하며, 집중 코스이거나 진행 중인 코스가 없으면 data 없이 응답합니다.
                     """
     )
-    ResponseEntity<ApiResponse<WeatherCareBannerResponse>> getWeatherCareBanner(Double lat, Double lon);
+    ResponseEntity<ApiResponse<WeatherCareBannerResponse>> getWeatherCareBanner(
+            @RequestParam(name = "lat", required = false) Double lat,
+            @RequestParam(name = "lon", required = false) Double lon
+    );
 }

@@ -20,8 +20,8 @@ public class DashboardController implements DashboardApi {
     @Override
     @GetMapping("/weather-banner")
     public ResponseEntity<ApiResponse<WeatherCareBannerResponse>> getWeatherCareBanner(
-            @RequestParam(required = false) Double lat,
-            @RequestParam(required = false) Double lon
+            @RequestParam(name = "lat", required = false) Double lat,
+            @RequestParam(name = "lon", required = false) Double lon
     ) {
         return ResponseEntity.ok(ApiResponse.success(weatherCareBannerService.getBanner(lat, lon).orElse(null)));
     }
