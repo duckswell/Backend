@@ -32,22 +32,37 @@ public class WeatherCareBannerService {
     private static final double DUST_MODERATE_THRESHOLD = 80;
     private static final double DUST_BAD_THRESHOLD = 150;
 
+    private static final String ONBOARDING_SUMMARY_MESSAGE = "시술 정보를 등록하고 집중 코스를 시작해보세요";
+    private static final String ONBOARDING_TRIGGER_FACTOR = "코스 시작 전";
+
     private final WeatherService weatherService;
     private final CourseService courseService;
 
+    /**
+     * 집중 코스 진행 중일 때는 회복 배너가 대신 노출되므로 날씨 배너는 숨긴다. 진행 중인 코스가
+     * 아예 없는 신규 유저에게는(위치 기반이라 사용자 정보와 무관하므로) 날씨 배너를 그대로 보여주되,
+     * 종합 문구만 온보딩 안내로 대체한다.
+     */
     public Optional<WeatherCareBannerResponse> getBanner(Double lat, Double lon) {
         Optional<CurrentCourseResponse> currentCourse = courseService.getCurrentCourse();
-        if (currentCourse.isEmpty() || currentCourse.get().courseType() != CourseType.DAILY) {
+        if (currentCourse.isPresent() && currentCourse.get().courseType() == CourseType.FOCUS) {
             return Optional.empty();
         }
 
         WeatherResponse weather = weatherService.getCurrentWeather(lat, lon);
-        WeatherCareTriggerFactor triggerFactor = resolveTriggerFactor(weather);
+        WeatherIndicatorCard uv = resolveUvCard(weather.uvIndex());
+        WeatherIndicatorCard humidity = resolveHumidityCard(weather.humidity());
+        WeatherIndicatorCard dust = resolveDustCard(weather.pm10());
 
+        if (currentCourse.isEmpty()) {
+            return Optional.of(new WeatherCareBannerResponse(
+                    uv, humidity, dust, ONBOARDING_SUMMARY_MESSAGE, ONBOARDING_TRIGGER_FACTOR
+            ));
+        }
+
+        WeatherCareTriggerFactor triggerFactor = resolveTriggerFactor(weather);
         return Optional.of(new WeatherCareBannerResponse(
-                resolveUvCard(weather.uvIndex()),
-                resolveHumidityCard(weather.humidity()),
-                resolveDustCard(weather.pm10()),
+                uv, humidity, dust,
                 triggerFactor.getSummaryMessage(),
                 triggerFactor.getDescription()
         ));

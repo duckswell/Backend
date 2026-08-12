@@ -31,15 +31,18 @@ class WeatherCareBannerServiceTest {
     private WeatherCareBannerService weatherCareBannerService;
 
     @Test
-    void 진행중인_코스가_없으면_배너를_노출하지_않는다() {
+    void 진행중인_코스가_없으면_지표는_실제_날씨값으로_문구는_온보딩_안내로_노출한다() {
         // given
         when(courseService.getCurrentCourse()).thenReturn(Optional.empty());
+        when(weatherService.getCurrentWeather(any(), any())).thenReturn(weather(1.6, 34, 14.5));
 
         // when
-        Optional<WeatherCareBannerResponse> banner = weatherCareBannerService.getBanner(null, null);
+        WeatherCareBannerResponse banner = weatherCareBannerService.getBanner(null, null).orElseThrow();
 
         // then
-        assertThat(banner).isEmpty();
+        assertThat(banner.uv().value()).isEqualTo(1.6);
+        assertThat(banner.summaryMessage()).isEqualTo("시술 정보를 등록하고 집중 코스를 시작해보세요");
+        assertThat(banner.triggerFactor()).isEqualTo("코스 시작 전");
     }
 
     @Test
