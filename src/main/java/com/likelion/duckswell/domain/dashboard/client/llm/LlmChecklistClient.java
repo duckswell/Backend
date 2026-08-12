@@ -225,8 +225,6 @@ public class LlmChecklistClient {
         ObjectNode itemsArray = objectMapper.createObjectNode();
         itemsArray.put("type", "array");
         itemsArray.set("items", itemSchema);
-        itemsArray.put("minItems", CHECKLIST_ITEM_COUNT);
-        itemsArray.put("maxItems", CHECKLIST_ITEM_COUNT);
 
         ObjectNode rootProperties = objectMapper.createObjectNode();
         rootProperties.set("items", itemsArray);
@@ -252,6 +250,7 @@ public class LlmChecklistClient {
     }
 
     private LlmChecklistResult parseResult(JsonNode response) {
+        List<ChecklistItemDraft> items;
         try {
             String content = response.path("choices").get(0).path("message").path("content").asText();
             JsonNode parsed = objectMapper.readTree(content);
@@ -260,13 +259,18 @@ public class LlmChecklistClient {
                     parsed.get("items"),
                     objectMapper.getTypeFactory().constructCollectionType(List.class, ChecklistItemDraftJson.class)
             );
-            List<ChecklistItemDraft> items = parsedItems.stream().map(ChecklistItemDraftJson::toDraft).toList();
-
-            return new LlmChecklistResult(items);
+            items = parsedItems.stream().map(ChecklistItemDraftJson::toDraft).toList();
         } catch (Exception e) {
             log.error("LLM 응답 파싱 실패: {}", response, e);
             throw new CustomException(DashboardErrorCode.LLM_RESPONSE_INVALID);
         }
+
+        if (items.size() != CHECKLIST_ITEM_COUNT) {
+            log.error("LLM 응답 항목 개수가 올바르지 않습니다 (expected={}, actual={}): {}", CHECKLIST_ITEM_COUNT, items.size(), response);
+            throw new CustomException(DashboardErrorCode.LLM_RESPONSE_INVALID);
+        }
+
+        return new LlmChecklistResult(items);
     }
 
     private record ChecklistItemDraftJson(String title, String description) {
