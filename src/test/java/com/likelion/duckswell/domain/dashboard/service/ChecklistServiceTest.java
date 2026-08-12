@@ -110,7 +110,7 @@ class ChecklistServiceTest {
         // then
         assertThat(result).extracting(ChecklistItemResponse::title)
                 .containsExactly("시술 부위에 손대지 않기", "각질은 억지로 떼지 않기");
-        verify(weatherService, never()).getCurrentWeather(any(), any());
+        verify(weatherService, never()).getTodayForecast(any(), any());
 
         ArgumentCaptor<ChecklistItem> captor = ArgumentCaptor.forClass(ChecklistItem.class);
         verify(checklistItemRepository, times(2)).save(captor.capture());
@@ -125,7 +125,7 @@ class ChecklistServiceTest {
         when(courseService.getCurrentCourse())
                 .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.DAILY, "수분 보충 케어", LocalDate.now(), 0)));
         when(routineService.getRecentRoutineSnapshots(anyLong(), anyInt())).thenReturn(List.of());
-        when(weatherService.getCurrentWeather(null, null))
+        when(weatherService.getTodayForecast(null, null))
                 .thenReturn(new WeatherResponse(20.0, "Sunny", 20, 8.0, 10.0, 10.0, 1));
         when(llmChecklistClient.generate(any())).thenReturn(new LlmChecklistResult(List.of(
                 new ChecklistItemDraft("세안 후 보습제 충분히 바르기", "날씨가 건조하므로 오늘은 특히 충분한 보습이 필요해요."),

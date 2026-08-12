@@ -84,7 +84,7 @@ public class ChecklistService {
         if (course.courseType() == CourseType.FOCUS) {
             return new LlmChecklistContext(CourseType.FOCUS, procedureService.getMyProcedures(), recentRoutines, null);
         }
-        return new LlmChecklistContext(CourseType.DAILY, null, recentRoutines, weatherService.getCurrentWeather(lat, lon));
+        return new LlmChecklistContext(CourseType.DAILY, null, recentRoutines, weatherService.getTodayForecast(lat, lon));
     }
 
     private ChecklistSourceType resolveSourceType(CourseType courseType) {
