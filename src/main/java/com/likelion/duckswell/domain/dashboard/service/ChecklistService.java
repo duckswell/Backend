@@ -38,15 +38,25 @@ public class ChecklistService {
     private final WeatherService weatherService;
     private final LlmChecklistClient llmChecklistClient;
 
-    /** 오늘 이미 생성된 항목이 있으면 재사용하고, 없을 때만 진행 중인 코스 기준으로 새로 생성한다. */
+    /**
+     * 오늘, 그리고 지금 진행 중인 코스 기준으로 이미 생성된 항목이 있으면 재사용하고, 없을 때만 새로 생성한다.
+     * 코스가 바뀌면(FOCUS↔DAILY 전환, 코스 재시작 등) 같은 날이어도 courseId가 달라져 곧바로 새로 생성된다.
+     */
     @Transactional
     public List<ChecklistItemResponse> getTodayChecklist(Double lat, Double lon) {
+        Optional<CurrentCourseResponse> currentCourse = courseService.getCurrentCourse();
+        if (currentCourse.isEmpty()) {
+            return List.of();
+        }
+
+        CurrentCourseResponse course = currentCourse.get();
         LocalDate today = LocalDate.now();
-        List<ChecklistItem> existingItems = checklistItemRepository.findByMemberIdAndItemDate(Member.DEFAULT_ID, today);
+        List<ChecklistItem> existingItems = checklistItemRepository.findByMemberIdAndCourseIdAndItemDate(
+                Member.DEFAULT_ID, course.courseId(), today);
         if (!existingItems.isEmpty()) {
             return existingItems.stream().map(ChecklistItemResponse::from).toList();
         }
-        return generateTodayChecklist(lat, lon, today);
+        return generateTodayChecklist(course, lat, lon, today);
     }
 
     @Transactional
@@ -60,19 +70,13 @@ public class ChecklistService {
         return ChecklistItemResponse.from(checklistItem);
     }
 
-    private List<ChecklistItemResponse> generateTodayChecklist(Double lat, Double lon, LocalDate today) {
-        Optional<CurrentCourseResponse> currentCourse = courseService.getCurrentCourse();
-        if (currentCourse.isEmpty()) {
-            return List.of();
-        }
-
-        CurrentCourseResponse course = currentCourse.get();
+    private List<ChecklistItemResponse> generateTodayChecklist(CurrentCourseResponse course, Double lat, Double lon, LocalDate today) {
         LlmChecklistResult result = llmChecklistClient.generate(buildContext(course, lat, lon));
         ChecklistSourceType sourceType = resolveSourceType(course.courseType());
 
         List<ChecklistItem> savedItems = result.items().stream()
                 .map(draft -> checklistItemRepository.save(
-                        new ChecklistItem(Member.DEFAULT_ID, today, draft.title(), draft.description(), sourceType)))
+                        new ChecklistItem(Member.DEFAULT_ID, course.courseId(), today, draft.title(), draft.description(), sourceType)))
                 .toList();
 
         return savedItems.stream().map(ChecklistItemResponse::from).toList();

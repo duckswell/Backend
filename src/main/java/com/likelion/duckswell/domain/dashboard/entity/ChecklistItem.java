@@ -27,6 +27,9 @@ public class ChecklistItem extends BaseEntity {
     @Column(name = "member_id", nullable = false)
     private Long memberId;
 
+    @Column(name = "course_id", nullable = false)
+    private Long courseId;
+
     @Column(nullable = false)
     private LocalDate itemDate;
 
@@ -45,12 +48,14 @@ public class ChecklistItem extends BaseEntity {
 
     public ChecklistItem(
             Long memberId,
+            Long courseId,
             LocalDate itemDate,
             String title,
             String description,
             ChecklistSourceType sourceType
     ) {
         this.memberId = memberId;
+        this.courseId = courseId;
         this.itemDate = itemDate;
         this.title = title;
         this.description = description;
