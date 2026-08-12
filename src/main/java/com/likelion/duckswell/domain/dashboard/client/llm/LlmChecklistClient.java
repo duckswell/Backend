@@ -135,6 +135,7 @@ public class LlmChecklistClient {
     private String buildUserText(LlmChecklistContext context) {
         StringBuilder sb = new StringBuilder();
 
+        sb.append("[오늘 날짜] ").append(context.today()).append('\n');
         if (context.courseType() == CourseType.FOCUS) {
             appendProcedures(sb, context.procedures());
         } else {
@@ -153,7 +154,7 @@ public class LlmChecklistClient {
         sb.append("[등록된 시술 정보]\n");
         for (ProcedureResponse procedure : procedures) {
             sb.append("- %s (%s, %d/%d회, 부위: %s)\n".formatted(
-                    procedure.procedureType(),
+                    procedure.procedureTypeName(),
                     procedure.procedureDate(),
                     procedure.currentCount(),
                     procedure.totalCount(),

@@ -71,7 +71,7 @@ public class ChecklistService {
     }
 
     private List<ChecklistItemResponse> generateTodayChecklist(CurrentCourseResponse course, Double lat, Double lon, LocalDate today) {
-        LlmChecklistResult result = llmChecklistClient.generate(buildContext(course, lat, lon));
+        LlmChecklistResult result = llmChecklistClient.generate(buildContext(course, lat, lon, today));
         ChecklistSourceType sourceType = resolveSourceType(course.courseType());
 
         List<ChecklistItem> savedItems = result.items().stream()
@@ -82,13 +82,13 @@ public class ChecklistService {
         return savedItems.stream().map(ChecklistItemResponse::from).toList();
     }
 
-    private LlmChecklistContext buildContext(CurrentCourseResponse course, Double lat, Double lon) {
+    private LlmChecklistContext buildContext(CurrentCourseResponse course, Double lat, Double lon, LocalDate today) {
         List<RoutineSnapshot> recentRoutines = routineService.getRecentRoutineSnapshots(course.courseId(), RECENT_ROUTINE_LOOKBACK);
 
         if (course.courseType() == CourseType.FOCUS) {
-            return new LlmChecklistContext(CourseType.FOCUS, procedureService.getMyProcedures(), recentRoutines, null);
+            return new LlmChecklistContext(CourseType.FOCUS, today, procedureService.getMyProcedures(), recentRoutines, null);
         }
-        return new LlmChecklistContext(CourseType.DAILY, null, recentRoutines, weatherService.getTodayForecast(lat, lon));
+        return new LlmChecklistContext(CourseType.DAILY, today, null, recentRoutines, weatherService.getTodayForecast(lat, lon));
     }
 
     private ChecklistSourceType resolveSourceType(CourseType courseType) {
