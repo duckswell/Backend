@@ -139,6 +139,7 @@ public class LlmChecklistClient {
         if (context.courseType() == CourseType.FOCUS) {
             appendProcedures(sb, context.procedures());
         } else {
+            sb.append("[진행 중인 데일리 루틴] ").append(context.routineTypeLabel()).append('\n');
             appendWeather(sb, context.weather());
         }
         appendRecentRoutines(sb, context.recentRoutines());
