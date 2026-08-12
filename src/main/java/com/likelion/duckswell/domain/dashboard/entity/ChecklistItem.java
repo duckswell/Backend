@@ -20,8 +20,8 @@ import lombok.NoArgsConstructor;
 @Table(
         name = "checklist_item",
         uniqueConstraints = @UniqueConstraint(
-                name = "uk_checklist_item_member_course_date_title",
-                columnNames = {"member_id", "course_id", "item_date", "title"}
+                name = "uk_checklist_item_member_course_date_order",
+                columnNames = {"member_id", "course_id", "item_date", "item_order"}
         )
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -40,6 +40,10 @@ public class ChecklistItem extends BaseEntity {
     @Column(nullable = false)
     private LocalDate itemDate;
 
+    /** 하루 생성 배치 내 순번(0, 1) - LLM 응답 문구와 무관하게 (memberId, courseId, itemDate) 당 단일 생성을 DB 레벨에서 보장하기 위한 키. */
+    @Column(name = "item_order", nullable = false)
+    private int itemOrder;
+
     @Column(nullable = false, length = 50)
     private String title;
 
@@ -57,6 +61,7 @@ public class ChecklistItem extends BaseEntity {
             Long memberId,
             Long courseId,
             LocalDate itemDate,
+            int itemOrder,
             String title,
             String description,
             ChecklistSourceType sourceType
@@ -64,6 +69,7 @@ public class ChecklistItem extends BaseEntity {
         this.memberId = memberId;
         this.courseId = courseId;
         this.itemDate = itemDate;
+        this.itemOrder = itemOrder;
         this.title = title;
         this.description = description;
         this.sourceType = sourceType;

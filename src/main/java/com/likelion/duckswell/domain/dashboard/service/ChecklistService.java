@@ -6,6 +6,7 @@ import com.likelion.duckswell.domain.course.service.CourseService;
 import com.likelion.duckswell.domain.dashboard.client.llm.LlmChecklistClient;
 import com.likelion.duckswell.domain.dashboard.client.llm.LlmChecklistContext;
 import com.likelion.duckswell.domain.dashboard.client.llm.LlmChecklistResult;
+import com.likelion.duckswell.domain.dashboard.client.llm.LlmChecklistResult.ChecklistItemDraft;
 import com.likelion.duckswell.domain.dashboard.dto.ChecklistItemResponse;
 import com.likelion.duckswell.domain.dashboard.entity.ChecklistItem;
 import com.likelion.duckswell.domain.dashboard.entity.ChecklistSourceType;
@@ -20,6 +21,7 @@ import com.likelion.duckswell.global.exception.CustomException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -58,7 +60,7 @@ public class ChecklistService {
 
         CurrentCourseResponse course = currentCourse.get();
         LocalDate today = LocalDate.now();
-        List<ChecklistItem> existingItems = checklistItemRepository.findByMemberIdAndCourseIdAndItemDate(
+        List<ChecklistItem> existingItems = checklistItemRepository.findByMemberIdAndCourseIdAndItemDateOrderByItemOrderAsc(
                 Member.DEFAULT_ID, course.courseId(), today);
         if (!existingItems.isEmpty()) {
             return existingItems.stream().map(ChecklistItemResponse::from).toList();
@@ -78,17 +80,23 @@ public class ChecklistService {
     }
 
     /**
-     * 저장은 saveAll로 한 번에 묶어 두 항목이 함께 성공/실패하도록 한다. 동시 요청 두 건이 같은
-     * (memberId, courseId, itemDate)에 대해 동시에 이 시점까지 왔다면, 유니크 제약(member_id,
-     * course_id, item_date, title) 위반으로 둘 중 하나는 저장에 실패한다 - 그 경우 LLM을 다시
-     * 호출하지 않고, 먼저 저장에 성공한 요청의 결과를 다시 조회해 반환한다.
+     * 저장은 saveAll로 한 번에 묶어 두 항목이 함께 성공/실패하도록 한다. 각 항목엔 배치 내 순번
+     * (itemOrder: 0, 1)을 매기는데, 이 값은 LLM 응답 문구와 무관하게 고정돼 있어서 - 동시 요청
+     * 두 건이 같은 (memberId, courseId, itemDate)에 대해 동시에 이 시점까지 왔다면(생성된 문구가
+     * 서로 다르더라도) 유니크 제약(member_id, course_id, item_date, item_order) 위반으로 둘 중
+     * 하나는 반드시 저장에 실패한다 - 그 경우 LLM을 다시 호출하지 않고, 먼저 저장에 성공한 요청의
+     * 결과를 다시 조회해 반환한다.
      */
     private List<ChecklistItemResponse> generateTodayChecklist(CurrentCourseResponse course, Double lat, Double lon, LocalDate today) {
         LlmChecklistResult result = llmChecklistClient.generate(buildContext(course, lat, lon, today));
         ChecklistSourceType sourceType = resolveSourceType(course.courseType());
 
-        List<ChecklistItem> itemsToSave = result.items().stream()
-                .map(draft -> new ChecklistItem(Member.DEFAULT_ID, course.courseId(), today, draft.title(), draft.description(), sourceType))
+        List<ChecklistItem> itemsToSave = IntStream.range(0, result.items().size())
+                .mapToObj(index -> {
+                    ChecklistItemDraft draft = result.items().get(index);
+                    return new ChecklistItem(
+                            Member.DEFAULT_ID, course.courseId(), today, index, draft.title(), draft.description(), sourceType);
+                })
                 .toList();
 
         try {
@@ -97,7 +105,7 @@ public class ChecklistService {
         } catch (DataIntegrityViolationException e) {
             log.warn("체크리스트 동시 생성 충돌 감지 - 기존 항목을 재조회합니다 (memberId={}, courseId={}, itemDate={})",
                     Member.DEFAULT_ID, course.courseId(), today);
-            List<ChecklistItem> existingItems = checklistItemRepository.findByMemberIdAndCourseIdAndItemDate(
+            List<ChecklistItem> existingItems = checklistItemRepository.findByMemberIdAndCourseIdAndItemDateOrderByItemOrderAsc(
                     Member.DEFAULT_ID, course.courseId(), today);
             return existingItems.stream().map(ChecklistItemResponse::from).toList();
         }

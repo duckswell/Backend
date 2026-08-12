@@ -77,11 +77,11 @@ class ChecklistServiceTest {
     @Test
     void 오늘_같은_코스로_이미_생성된_항목이_있으면_그대로_반환하고_LLM을_호출하지_않는다() {
         // given
-        ChecklistItem existing1 = new ChecklistItem(1L, 1L, LocalDate.now(), "제목1", "설명1", ChecklistSourceType.WEATHER_ROUTINE);
-        ChecklistItem existing2 = new ChecklistItem(1L, 1L, LocalDate.now(), "제목2", "설명2", ChecklistSourceType.WEATHER_ROUTINE);
+        ChecklistItem existing1 = new ChecklistItem(1L, 1L, LocalDate.now(), 0, "제목1", "설명1", ChecklistSourceType.WEATHER_ROUTINE);
+        ChecklistItem existing2 = new ChecklistItem(1L, 1L, LocalDate.now(), 1, "제목2", "설명2", ChecklistSourceType.WEATHER_ROUTINE);
         when(courseService.getCurrentCourse())
                 .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.DAILY, "수분 보충 케어", LocalDate.now(), 0)));
-        when(checklistItemRepository.findByMemberIdAndCourseIdAndItemDate(anyLong(), anyLong(), any()))
+        when(checklistItemRepository.findByMemberIdAndCourseIdAndItemDateOrderByItemOrderAsc(anyLong(), anyLong(), any()))
                 .thenReturn(List.of(existing1, existing2));
 
         // when
@@ -95,7 +95,7 @@ class ChecklistServiceTest {
     @Test
     void FOCUS_코스면_시술_내역_기반으로_체크리스트를_생성하고_PROCEDURE_CAUTION으로_저장한다() {
         // given
-        when(checklistItemRepository.findByMemberIdAndCourseIdAndItemDate(anyLong(), anyLong(), any())).thenReturn(List.of());
+        when(checklistItemRepository.findByMemberIdAndCourseIdAndItemDateOrderByItemOrderAsc(anyLong(), anyLong(), any())).thenReturn(List.of());
         when(courseService.getCurrentCourse())
                 .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.FOCUS, "집중코스", LocalDate.now(), 0)));
         when(procedureService.getMyProcedures()).thenReturn(List.of());
@@ -124,7 +124,7 @@ class ChecklistServiceTest {
     @Test
     void DAILY_코스면_날씨_기반으로_체크리스트를_생성하고_WEATHER_ROUTINE으로_저장한다() {
         // given
-        when(checklistItemRepository.findByMemberIdAndCourseIdAndItemDate(anyLong(), anyLong(), any())).thenReturn(List.of());
+        when(checklistItemRepository.findByMemberIdAndCourseIdAndItemDateOrderByItemOrderAsc(anyLong(), anyLong(), any())).thenReturn(List.of());
         when(courseService.getCurrentCourse())
                 .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.DAILY, "수분 보충 케어", LocalDate.now(), 0)));
         when(routineService.getRecentRoutineSnapshots(anyLong(), anyInt())).thenReturn(List.of());
@@ -154,9 +154,9 @@ class ChecklistServiceTest {
     @Test
     void 동시_생성으로_유니크_제약_위반이_발생하면_LLM을_다시_호출하지_않고_기존_항목을_재조회한다() {
         // given
-        ChecklistItem winnerItem1 = new ChecklistItem(1L, 1L, LocalDate.now(), "제목1", "설명1", ChecklistSourceType.WEATHER_ROUTINE);
-        ChecklistItem winnerItem2 = new ChecklistItem(1L, 1L, LocalDate.now(), "제목2", "설명2", ChecklistSourceType.WEATHER_ROUTINE);
-        when(checklistItemRepository.findByMemberIdAndCourseIdAndItemDate(anyLong(), anyLong(), any()))
+        ChecklistItem winnerItem1 = new ChecklistItem(1L, 1L, LocalDate.now(), 0, "제목1", "설명1", ChecklistSourceType.WEATHER_ROUTINE);
+        ChecklistItem winnerItem2 = new ChecklistItem(1L, 1L, LocalDate.now(), 1, "제목2", "설명2", ChecklistSourceType.WEATHER_ROUTINE);
+        when(checklistItemRepository.findByMemberIdAndCourseIdAndItemDateOrderByItemOrderAsc(anyLong(), anyLong(), any()))
                 .thenReturn(List.of())
                 .thenReturn(List.of(winnerItem1, winnerItem2));
         when(courseService.getCurrentCourse())
@@ -181,7 +181,7 @@ class ChecklistServiceTest {
     @Test
     void 체크되지_않은_항목을_토글하면_체크된다() {
         // given
-        ChecklistItem item = new ChecklistItem(1L, 1L, LocalDate.now(), "제목", "설명", ChecklistSourceType.WEATHER_ROUTINE);
+        ChecklistItem item = new ChecklistItem(1L, 1L, LocalDate.now(), 0, "제목", "설명", ChecklistSourceType.WEATHER_ROUTINE);
         when(checklistItemRepository.findByIdAndMemberId(anyLong(), anyLong())).thenReturn(Optional.of(item));
 
         // when
@@ -194,7 +194,7 @@ class ChecklistServiceTest {
     @Test
     void 체크된_항목을_토글하면_체크가_취소된다() {
         // given
-        ChecklistItem item = new ChecklistItem(1L, 1L, LocalDate.now(), "제목", "설명", ChecklistSourceType.WEATHER_ROUTINE);
+        ChecklistItem item = new ChecklistItem(1L, 1L, LocalDate.now(), 0, "제목", "설명", ChecklistSourceType.WEATHER_ROUTINE);
         item.check();
         when(checklistItemRepository.findByIdAndMemberId(anyLong(), anyLong())).thenReturn(Optional.of(item));
 
