@@ -37,6 +37,14 @@ public class ProcedureService {
                 .toList();
     }
 
+    /** GET /api/procedures/current용 - FOCUS 코스가 아니거나 진행 중인 코스가 아예 없으면 빈 목록을 반환한다. */
+    public List<ProcedureResponse> getCurrentCourseProcedures() {
+        return courseService.getCurrentCourse()
+                .filter(course -> course.courseType() == CourseType.FOCUS)
+                .map(course -> getProceduresForCourse(course.courseId()))
+                .orElse(List.of());
+    }
+
     public ProcedureResponse getProcedure(Long procedureId) {
         return ProcedureResponse.from(getOwnedProcedure(procedureId));
     }

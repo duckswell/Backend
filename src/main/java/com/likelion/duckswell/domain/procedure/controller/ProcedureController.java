@@ -33,6 +33,12 @@ public class ProcedureController implements ProcedureApi {
     }
 
     @Override
+    @GetMapping("/current")
+    public ResponseEntity<ApiResponse<List<ProcedureResponse>>> getCurrentCourseProcedures() {
+        return ResponseEntity.ok(ApiResponse.success(procedureService.getCurrentCourseProcedures()));
+    }
+
+    @Override
     @GetMapping("/{procedureId}")
     public ResponseEntity<ApiResponse<ProcedureResponse>> getProcedure(@PathVariable Long procedureId) {
         return ResponseEntity.ok(ApiResponse.success(procedureService.getProcedure(procedureId)));

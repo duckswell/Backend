@@ -23,6 +23,15 @@ public interface ProcedureApi {
     ResponseEntity<ApiResponse<List<ProcedureResponse>>> getMyProcedures();
 
     @Operation(
+            summary = "현재 코스 시술 정보 조회",
+            description = """
+                    지금 진행 중인 집중 코스에 등록된 시술 정보만 조회합니다 (전체 이력이 아님).
+                    진행 중인 코스가 없거나 데일리 코스면 빈 목록을 반환합니다.
+                    """
+    )
+    ResponseEntity<ApiResponse<List<ProcedureResponse>>> getCurrentCourseProcedures();
+
+    @Operation(
             summary = "시술 정보 단건 조회",
             description = "시술 정보 하나를 id로 조회합니다."
     )

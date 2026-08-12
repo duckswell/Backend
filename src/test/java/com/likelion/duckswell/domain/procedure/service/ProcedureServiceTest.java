@@ -3,6 +3,9 @@ package com.likelion.duckswell.domain.procedure.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -94,5 +97,47 @@ class ProcedureServiceTest {
                 .isInstanceOf(CustomException.class)
                 .extracting(exception -> ((CustomException) exception).getErrorCode())
                 .isEqualTo(ProcedureErrorCode.FOCUS_COURSE_REQUIRED);
+    }
+
+    @Test
+    void 집중_코스_진행중이면_현재_코스_시술만_조회된다() {
+        // given
+        when(courseService.getCurrentCourse())
+                .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.FOCUS, "집중코스", LocalDate.now(), 0)));
+        when(procedureRepository.findByMemberIdAndCourseIdOrderByProcedureDateDesc(anyLong(), eq(1L)))
+                .thenReturn(List.of());
+
+        // when
+        List<ProcedureResponse> result = procedureService.getCurrentCourseProcedures();
+
+        // then
+        assertThat(result).isEmpty();
+        verify(procedureRepository).findByMemberIdAndCourseIdOrderByProcedureDateDesc(anyLong(), eq(1L));
+    }
+
+    @Test
+    void 데일리_코스_진행중이면_현재_코스_시술_조회시_빈_목록을_반환한다() {
+        // given
+        when(courseService.getCurrentCourse())
+                .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.DAILY, "수분 보충 케어", LocalDate.now(), 0)));
+
+        // when
+        List<ProcedureResponse> result = procedureService.getCurrentCourseProcedures();
+
+        // then
+        assertThat(result).isEmpty();
+        verify(procedureRepository, never()).findByMemberIdAndCourseIdOrderByProcedureDateDesc(any(), any());
+    }
+
+    @Test
+    void 진행중인_코스가_없으면_현재_코스_시술_조회시_빈_목록을_반환한다() {
+        // given
+        when(courseService.getCurrentCourse()).thenReturn(Optional.empty());
+
+        // when
+        List<ProcedureResponse> result = procedureService.getCurrentCourseProcedures();
+
+        // then
+        assertThat(result).isEmpty();
     }
 }
