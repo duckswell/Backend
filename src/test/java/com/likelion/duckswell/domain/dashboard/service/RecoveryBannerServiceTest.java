@@ -170,7 +170,7 @@ class RecoveryBannerServiceTest {
         LocalDate startedAt = LocalDate.now().minusDays(4);
         when(courseService.getCurrentCourse())
                 .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.FOCUS, "집중코스", startedAt, 0)));
-        when(procedureService.getMyProcedures()).thenReturn(List.of());
+        when(procedureService.getProceduresForCourse(anyLong())).thenReturn(List.of());
         givenNoDiagnosisRecords();
 
         // when
@@ -183,7 +183,7 @@ class RecoveryBannerServiceTest {
     private void givenFocusCourse(LocalDate procedureDate) {
         when(courseService.getCurrentCourse())
                 .thenReturn(Optional.of(currentCourse(CourseType.FOCUS, LocalDate.now())));
-        when(procedureService.getMyProcedures()).thenReturn(List.of(
+        when(procedureService.getProceduresForCourse(anyLong())).thenReturn(List.of(
                 new ProcedureResponse(1L, ProcedureType.IPL_LASER_TONING, "IPL/레이저토닝", procedureDate, 1, 5, List.of())
         ));
     }

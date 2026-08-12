@@ -115,7 +115,8 @@ public class ChecklistService {
         List<RoutineSnapshot> recentRoutines = routineService.getRecentRoutineSnapshots(course.courseId(), RECENT_ROUTINE_LOOKBACK);
 
         if (course.courseType() == CourseType.FOCUS) {
-            return new LlmChecklistContext(CourseType.FOCUS, today, procedureService.getMyProcedures(), null, recentRoutines, null);
+            return new LlmChecklistContext(
+                    CourseType.FOCUS, today, procedureService.getProceduresForCourse(course.courseId()), null, recentRoutines, null);
         }
         return new LlmChecklistContext(
                 CourseType.DAILY, today, null, course.label(), recentRoutines, weatherService.getTodayForecast(lat, lon));

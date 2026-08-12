@@ -64,9 +64,9 @@ public class RecoveryBannerService {
         return new SkinScoreCard(current, previous, current - previous);
     }
 
-    /** 등록된 시술 중 가장 최근 시술일 기준, 없으면 코스 시작일 기준으로 경과일수를 계산한다. */
+    /** 이 코스에 등록된 시술 중 가장 최근 시술일 기준, 없으면 코스 시작일 기준으로 경과일수를 계산한다. */
     private String resolveSummaryMessage(CurrentCourseResponse course) {
-        LocalDate referenceDate = procedureService.getMyProcedures().stream()
+        LocalDate referenceDate = procedureService.getProceduresForCourse(course.courseId()).stream()
                 .map(ProcedureResponse::procedureDate)
                 .max(Comparator.naturalOrder())
                 .orElse(course.startedAt());
