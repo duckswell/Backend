@@ -1,6 +1,7 @@
 package com.likelion.duckswell.domain.dashboard.controller;
 
 import com.likelion.duckswell.domain.dashboard.dto.ChecklistItemResponse;
+import com.likelion.duckswell.domain.dashboard.dto.RecoveryBannerResponse;
 import com.likelion.duckswell.domain.dashboard.dto.WeatherCareBannerResponse;
 import com.likelion.duckswell.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,6 +36,21 @@ public interface DashboardApi {
             @RequestParam(name = "lat", required = false) Double lat,
             @RequestParam(name = "lon", required = false) Double lon
     );
+
+    @Operation(
+            summary = "집중 코스 회복 배너 조회",
+            description = """
+                    집중 코스가 진행 중일 때만 노출되는 홈 화면 배너입니다. 진행 중인 코스가
+                    없거나 데일리 코스면 data 없이 응답합니다(그 경우엔 날씨 배너가 대신 노출됩니다).
+
+                    redness/texture/blemish: 오늘·어제 진단 점수(current/previous)와 그 차이(delta,
+                    +는 악화·-는 개선). 어제 기록이 없으면(집중 코스 첫날 등) previous/delta는 0으로
+                    고정되고, 오늘 진단 기록이 없으면 current도 0입니다.
+                    summaryMessage: 가장 최근 등록된 시술일(없으면 코스 시작일) 기준 경과일수로 결정되는
+                    회복 단계 안내 문구입니다 - 점수와 무관하게 날짜로만 결정됩니다.
+                    """
+    )
+    ResponseEntity<ApiResponse<RecoveryBannerResponse>> getRecoveryBanner();
 
     @Operation(
             summary = "오늘의 AI 체크리스트 조회",
