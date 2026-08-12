@@ -22,7 +22,6 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(SWAGGER_PATHS).permitAll()
-                        // TODO: JWT/카카오 OAuth2 도입 후 인증이 필요한 API만 남기고 permitAll 범위 축소
                         .anyRequest().permitAll()
                 );
 
