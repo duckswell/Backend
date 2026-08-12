@@ -30,8 +30,11 @@ public class ChecklistItem extends BaseEntity {
     @Column(nullable = false)
     private LocalDate itemDate;
 
+    @Column(nullable = false, length = 50)
+    private String title;
+
     @Column(nullable = false, length = 200)
-    private String contentText;
+    private String description;
 
     @Column(nullable = false)
     private boolean checked;
@@ -40,10 +43,17 @@ public class ChecklistItem extends BaseEntity {
     @Column(nullable = false, length = 30)
     private ChecklistSourceType sourceType;
 
-    public ChecklistItem(Long memberId, LocalDate itemDate, String contentText, ChecklistSourceType sourceType) {
+    public ChecklistItem(
+            Long memberId,
+            LocalDate itemDate,
+            String title,
+            String description,
+            ChecklistSourceType sourceType
+    ) {
         this.memberId = memberId;
         this.itemDate = itemDate;
-        this.contentText = contentText;
+        this.title = title;
+        this.description = description;
         this.sourceType = sourceType;
         this.checked = false;
     }
