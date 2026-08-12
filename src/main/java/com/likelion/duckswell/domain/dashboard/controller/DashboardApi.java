@@ -1,6 +1,7 @@
 package com.likelion.duckswell.domain.dashboard.controller;
 
 import com.likelion.duckswell.domain.dashboard.dto.ChecklistItemResponse;
+import com.likelion.duckswell.domain.dashboard.dto.RecoveryBannerResponse;
 import com.likelion.duckswell.domain.dashboard.dto.WeatherCareBannerResponse;
 import com.likelion.duckswell.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,13 +26,31 @@ public interface DashboardApi {
                     세 지표를 각각 심각도(양호/주의/심각)로 평가해 가장 심각도가 높은 지표 하나를 골라 종합 문구를 결정합니다.
                     심각도가 동일하게 겹치는 경우에만 자외선 > 습도 > 미세먼지 순으로 우선합니다.
                     lat/lon을 생략하면(예: 위치 권한 거부) 서울 좌표를 기본값으로 사용합니다.
-                    데일리 코스가 진행 중일 때만 배너를 노출하며, 집중 코스이거나 진행 중인 코스가 없으면 data 없이 응답합니다.
+                    집중 코스가 진행 중일 때만 배너를 숨기며(집중 코스는 별도 회복 배너가 대신 노출됨),
+                    데일리 코스이거나 진행 중인 코스가 아예 없으면(신규 유저) 배너를 노출합니다.
+                    진행 중인 코스가 없을 때는 지표 카드는 그대로 실제 날씨값을 반환하되, summaryMessage는
+                    "시술 정보를 등록하고 집중 코스를 시작해보세요"로 고정됩니다.
                     """
     )
     ResponseEntity<ApiResponse<WeatherCareBannerResponse>> getWeatherCareBanner(
             @RequestParam(name = "lat", required = false) Double lat,
             @RequestParam(name = "lon", required = false) Double lon
     );
+
+    @Operation(
+            summary = "집중 코스 회복 배너 조회",
+            description = """
+                    집중 코스가 진행 중일 때만 노출되는 홈 화면 배너입니다. 진행 중인 코스가
+                    없거나 데일리 코스면 data 없이 응답합니다(그 경우엔 날씨 배너가 대신 노출됩니다).
+
+                    redness/texture/blemish: 오늘·어제 진단 점수(current/previous)와 그 차이(delta,
+                    +는 악화·-는 개선). 어제 기록이 없으면(집중 코스 첫날 등) previous/delta는 0으로
+                    고정되고, 오늘 진단 기록이 없으면 current도 0입니다.
+                    summaryMessage: 가장 최근 등록된 시술일(없으면 코스 시작일) 기준 경과일수로 결정되는
+                    회복 단계 안내 문구입니다 - 점수와 무관하게 날짜로만 결정됩니다.
+                    """
+    )
+    ResponseEntity<ApiResponse<RecoveryBannerResponse>> getRecoveryBanner();
 
     @Operation(
             summary = "오늘의 AI 체크리스트 조회",

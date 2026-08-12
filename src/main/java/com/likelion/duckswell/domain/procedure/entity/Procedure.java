@@ -31,6 +31,10 @@ public class Procedure extends BaseEntity {
     @Column(name = "member_id", nullable = false)
     private Long memberId;
 
+    /** 시술은 등록 시점에 진행 중이던 집중 코스에 귀속된다 - 그 코스가 끝나면 이 시술도 더 이상 "현재 시술"로 취급되지 않는다. */
+    @Column(name = "course_id", nullable = false)
+    private Long courseId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private ProcedureType procedureType;
@@ -45,8 +49,9 @@ public class Procedure extends BaseEntity {
     @OneToMany(mappedBy = "procedure", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProcedureArea> areas = new ArrayList<>();
 
-    public Procedure(Long memberId, ProcedureType procedureType, LocalDate procedureDate, Integer currentCount, Integer totalCount) {
+    public Procedure(Long memberId, Long courseId, ProcedureType procedureType, LocalDate procedureDate, Integer currentCount, Integer totalCount) {
         this.memberId = memberId;
+        this.courseId = courseId;
         this.procedureType = procedureType;
         this.procedureDate = procedureDate;
         this.currentCount = currentCount;

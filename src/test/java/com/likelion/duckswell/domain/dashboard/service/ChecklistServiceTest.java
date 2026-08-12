@@ -98,7 +98,7 @@ class ChecklistServiceTest {
         when(checklistItemRepository.findByMemberIdAndCourseIdAndItemDateOrderByItemOrderAsc(anyLong(), anyLong(), any())).thenReturn(List.of());
         when(courseService.getCurrentCourse())
                 .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.FOCUS, "집중코스", LocalDate.now(), 0)));
-        when(procedureService.getMyProcedures()).thenReturn(List.of());
+        when(procedureService.getProceduresForCourse(anyLong())).thenReturn(List.of());
         when(routineService.getRecentRoutineSnapshots(anyLong(), anyInt())).thenReturn(List.of());
         when(llmChecklistClient.generate(any())).thenReturn(new LlmChecklistResult(List.of(
                 new ChecklistItemDraft("시술 부위에 손대지 않기", "자극이 되지 않도록 시술 부위를 만지거나 문지르지 마세요."),
@@ -142,7 +142,7 @@ class ChecklistServiceTest {
         // then
         assertThat(result).extracting(ChecklistItemResponse::title)
                 .containsExactly("세안 후 보습제 충분히 바르기", "틈틈히 자외선 차단제 바르기");
-        verify(procedureService, never()).getMyProcedures();
+        verify(procedureService, never()).getProceduresForCourse(any());
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<ChecklistItem>> captor = ArgumentCaptor.forClass(List.class);

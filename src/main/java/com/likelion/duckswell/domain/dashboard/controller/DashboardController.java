@@ -1,8 +1,10 @@
 package com.likelion.duckswell.domain.dashboard.controller;
 
 import com.likelion.duckswell.domain.dashboard.dto.ChecklistItemResponse;
+import com.likelion.duckswell.domain.dashboard.dto.RecoveryBannerResponse;
 import com.likelion.duckswell.domain.dashboard.dto.WeatherCareBannerResponse;
 import com.likelion.duckswell.domain.dashboard.service.ChecklistService;
+import com.likelion.duckswell.domain.dashboard.service.RecoveryBannerService;
 import com.likelion.duckswell.domain.dashboard.service.WeatherCareBannerService;
 import com.likelion.duckswell.global.response.ApiResponse;
 import java.util.List;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class DashboardController implements DashboardApi {
 
     private final WeatherCareBannerService weatherCareBannerService;
+    private final RecoveryBannerService recoveryBannerService;
     private final ChecklistService checklistService;
 
     @Override
@@ -30,6 +33,12 @@ public class DashboardController implements DashboardApi {
             @RequestParam(name = "lon", required = false) Double lon
     ) {
         return ResponseEntity.ok(ApiResponse.success(weatherCareBannerService.getBanner(lat, lon).orElse(null)));
+    }
+
+    @Override
+    @GetMapping("/recovery-banner")
+    public ResponseEntity<ApiResponse<RecoveryBannerResponse>> getRecoveryBanner() {
+        return ResponseEntity.ok(ApiResponse.success(recoveryBannerService.getBanner().orElse(null)));
     }
 
     @Override
