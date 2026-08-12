@@ -22,6 +22,7 @@ import com.likelion.duckswell.domain.diagnosis.client.cv.PhotoQualityResult;
 import com.likelion.duckswell.domain.diagnosis.client.storage.PhotoStorage;
 import com.likelion.duckswell.domain.diagnosis.dto.DifficultyOptionResponse;
 import com.likelion.duckswell.domain.diagnosis.dto.DiagnosisResponse;
+import com.likelion.duckswell.domain.diagnosis.dto.DiagnosisScoreSnapshot;
 import com.likelion.duckswell.domain.diagnosis.dto.DiagnosisSubmitRequest;
 import com.likelion.duckswell.domain.diagnosis.dto.PhotoCheckResponse;
 import com.likelion.duckswell.domain.diagnosis.entity.Diagnosis;
@@ -223,6 +224,30 @@ public class DiagnosisService {
         LlmRecoveryStageResult result = llmRecoveryStageClient.summarize(
                 new LlmRecoveryStageContext(dayNumber, false, List.of(), null, null));
         return new RecoverySummaryResponse(result.recoveryStageSummaryText());
+    }
+
+    /**
+     * courseId의 특정 날짜 진단 점수를 조회한다 - 그 날짜에 루틴 기록이 없거나, 기록은 있어도
+     * 진단(사진 분석)을 안 했거나, 점수 중 일부가 비어 있으면 빈 값을 반환한다(집중 코스 홈 배너의
+     * 오늘/어제 점수 비교에 사용 - dashboard 도메인에서 호출).
+     */
+    public Optional<DiagnosisScoreSnapshot> getScores(Long courseId, LocalDate date) {
+        Optional<RoutineSnapshot> routine = routineService.findRoutineSnapshot(courseId, date);
+        if (routine.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Optional<Diagnosis> diagnosis = diagnosisRepository.findByRoutineId(routine.get().id());
+        if (diagnosis.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Diagnosis found = diagnosis.get();
+        if (found.getRednessScore() == null || found.getTextureScore() == null || found.getBlemishScore() == null) {
+            return Optional.empty();
+        }
+
+        return Optional.of(new DiagnosisScoreSnapshot(found.getRednessScore(), found.getTextureScore(), found.getBlemishScore()));
     }
 
     private DiagnosisErrorCode mapQualityReason(String reason) {
