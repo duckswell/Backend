@@ -38,11 +38,15 @@ public interface ProcedureApi {
                     시술 정보(종류/일자/횟수/부위)를 한 번에 여러 건 등록합니다.
                     시술 등록 화면에서 "시술 추가"로 늘어난 폼 목록을 한 번의 요청으로
                     함께 등록하는 것을 전제로 합니다.
+
+                    등록된 시술은 등록 시점에 진행 중이던 집중 코스에 귀속되며, 그 코스가
+                    끝나면 더 이상 "현재 시술"로 조회되지 않습니다. 진행 중인 집중 코스가
+                    없으면 등록할 수 없습니다.
                     """
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "시술 정보 등록 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "요청 값 검증 실패 (필수값 누락, 시술 부위 미지정 등)")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "요청 값 검증 실패 (필수값 누락, 시술 부위 미지정 등) 또는 진행 중인 집중 코스가 없음")
     })
     ResponseEntity<ApiResponse<List<ProcedureResponse>>> registerProcedures(ProcedureRegisterRequest request);
 

@@ -9,5 +9,7 @@ public interface ProcedureRepository extends JpaRepository<Procedure, Long> {
 
     List<Procedure> findByMemberIdOrderByProcedureDateDesc(Long memberId);
 
+    List<Procedure> findByMemberIdAndCourseIdOrderByProcedureDateDesc(Long memberId, Long courseId);
+
     Optional<Procedure> findByIdAndMemberId(Long id, Long memberId);
 }
