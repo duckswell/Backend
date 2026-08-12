@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -16,7 +17,13 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "checklist_item")
+@Table(
+        name = "checklist_item",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_checklist_item_member_course_date_title",
+                columnNames = {"member_id", "course_id", "item_date", "title"}
+        )
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChecklistItem extends BaseEntity {
 

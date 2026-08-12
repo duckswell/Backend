@@ -35,6 +35,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @ExtendWith(MockitoExtension.class)
 class ChecklistServiceTest {
@@ -103,7 +104,7 @@ class ChecklistServiceTest {
                 new ChecklistItemDraft("시술 부위에 손대지 않기", "자극이 되지 않도록 시술 부위를 만지거나 문지르지 마세요."),
                 new ChecklistItemDraft("각질은 억지로 떼지 않기", "일어난 각질이나 딱지는 손으로 뜯지 말고 자연스럽게 떨어지도록 두세요.")
         )));
-        when(checklistItemRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(checklistItemRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
         List<ChecklistItemResponse> result = checklistService.getTodayChecklist(null, null);
@@ -113,9 +114,10 @@ class ChecklistServiceTest {
                 .containsExactly("시술 부위에 손대지 않기", "각질은 억지로 떼지 않기");
         verify(weatherService, never()).getTodayForecast(any(), any());
 
-        ArgumentCaptor<ChecklistItem> captor = ArgumentCaptor.forClass(ChecklistItem.class);
-        verify(checklistItemRepository, times(2)).save(captor.capture());
-        assertThat(captor.getAllValues()).allSatisfy(item ->
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ChecklistItem>> captor = ArgumentCaptor.forClass(List.class);
+        verify(checklistItemRepository).saveAll(captor.capture());
+        assertThat(captor.getValue()).allSatisfy(item ->
                 assertThat(item.getSourceType()).isEqualTo(ChecklistSourceType.PROCEDURE_CAUTION));
     }
 
@@ -132,7 +134,7 @@ class ChecklistServiceTest {
                 new ChecklistItemDraft("세안 후 보습제 충분히 바르기", "날씨가 건조하므로 오늘은 특히 충분한 보습이 필요해요."),
                 new ChecklistItemDraft("틈틈히 자외선 차단제 바르기", "자외선 지수가 높아 여드름 흔적에 색소침착이 되기 쉬워요.")
         )));
-        when(checklistItemRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(checklistItemRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
         List<ChecklistItemResponse> result = checklistService.getTodayChecklist(null, null);
@@ -142,10 +144,38 @@ class ChecklistServiceTest {
                 .containsExactly("세안 후 보습제 충분히 바르기", "틈틈히 자외선 차단제 바르기");
         verify(procedureService, never()).getMyProcedures();
 
-        ArgumentCaptor<ChecklistItem> captor = ArgumentCaptor.forClass(ChecklistItem.class);
-        verify(checklistItemRepository, times(2)).save(captor.capture());
-        assertThat(captor.getAllValues()).allSatisfy(item ->
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ChecklistItem>> captor = ArgumentCaptor.forClass(List.class);
+        verify(checklistItemRepository).saveAll(captor.capture());
+        assertThat(captor.getValue()).allSatisfy(item ->
                 assertThat(item.getSourceType()).isEqualTo(ChecklistSourceType.WEATHER_ROUTINE));
+    }
+
+    @Test
+    void 동시_생성으로_유니크_제약_위반이_발생하면_LLM을_다시_호출하지_않고_기존_항목을_재조회한다() {
+        // given
+        ChecklistItem winnerItem1 = new ChecklistItem(1L, 1L, LocalDate.now(), "제목1", "설명1", ChecklistSourceType.WEATHER_ROUTINE);
+        ChecklistItem winnerItem2 = new ChecklistItem(1L, 1L, LocalDate.now(), "제목2", "설명2", ChecklistSourceType.WEATHER_ROUTINE);
+        when(checklistItemRepository.findByMemberIdAndCourseIdAndItemDate(anyLong(), anyLong(), any()))
+                .thenReturn(List.of())
+                .thenReturn(List.of(winnerItem1, winnerItem2));
+        when(courseService.getCurrentCourse())
+                .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.DAILY, "수분 보충 케어", LocalDate.now(), 0)));
+        when(routineService.getRecentRoutineSnapshots(anyLong(), anyInt())).thenReturn(List.of());
+        when(weatherService.getTodayForecast(null, null))
+                .thenReturn(new WeatherResponse(20.0, "Sunny", 20, 8.0, 10.0, 10.0, 1));
+        when(llmChecklistClient.generate(any())).thenReturn(new LlmChecklistResult(List.of(
+                new ChecklistItemDraft("제목1", "설명1"),
+                new ChecklistItemDraft("제목2", "설명2")
+        )));
+        when(checklistItemRepository.saveAll(any())).thenThrow(new DataIntegrityViolationException("duplicate"));
+
+        // when
+        List<ChecklistItemResponse> result = checklistService.getTodayChecklist(null, null);
+
+        // then
+        assertThat(result).extracting(ChecklistItemResponse::title).containsExactly("제목1", "제목2");
+        verify(llmChecklistClient, times(1)).generate(any());
     }
 
     @Test

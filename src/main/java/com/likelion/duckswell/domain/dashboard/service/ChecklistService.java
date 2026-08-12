@@ -21,9 +21,12 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChecklistService {
@@ -74,16 +77,30 @@ public class ChecklistService {
         return ChecklistItemResponse.from(checklistItem);
     }
 
+    /**
+     * 저장은 saveAll로 한 번에 묶어 두 항목이 함께 성공/실패하도록 한다. 동시 요청 두 건이 같은
+     * (memberId, courseId, itemDate)에 대해 동시에 이 시점까지 왔다면, 유니크 제약(member_id,
+     * course_id, item_date, title) 위반으로 둘 중 하나는 저장에 실패한다 - 그 경우 LLM을 다시
+     * 호출하지 않고, 먼저 저장에 성공한 요청의 결과를 다시 조회해 반환한다.
+     */
     private List<ChecklistItemResponse> generateTodayChecklist(CurrentCourseResponse course, Double lat, Double lon, LocalDate today) {
         LlmChecklistResult result = llmChecklistClient.generate(buildContext(course, lat, lon, today));
         ChecklistSourceType sourceType = resolveSourceType(course.courseType());
 
-        List<ChecklistItem> savedItems = result.items().stream()
-                .map(draft -> checklistItemRepository.save(
-                        new ChecklistItem(Member.DEFAULT_ID, course.courseId(), today, draft.title(), draft.description(), sourceType)))
+        List<ChecklistItem> itemsToSave = result.items().stream()
+                .map(draft -> new ChecklistItem(Member.DEFAULT_ID, course.courseId(), today, draft.title(), draft.description(), sourceType))
                 .toList();
 
-        return savedItems.stream().map(ChecklistItemResponse::from).toList();
+        try {
+            List<ChecklistItem> savedItems = checklistItemRepository.saveAll(itemsToSave);
+            return savedItems.stream().map(ChecklistItemResponse::from).toList();
+        } catch (DataIntegrityViolationException e) {
+            log.warn("체크리스트 동시 생성 충돌 감지 - 기존 항목을 재조회합니다 (memberId={}, courseId={}, itemDate={})",
+                    Member.DEFAULT_ID, course.courseId(), today);
+            List<ChecklistItem> existingItems = checklistItemRepository.findByMemberIdAndCourseIdAndItemDate(
+                    Member.DEFAULT_ID, course.courseId(), today);
+            return existingItems.stream().map(ChecklistItemResponse::from).toList();
+        }
     }
 
     private LlmChecklistContext buildContext(CurrentCourseResponse course, Double lat, Double lon, LocalDate today) {
