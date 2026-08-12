@@ -2,6 +2,7 @@ package com.likelion.duckswell.domain.procedure.dto;
 
 import com.likelion.duckswell.domain.procedure.entity.ProcedureAreaType;
 import com.likelion.duckswell.domain.procedure.entity.ProcedureType;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -10,6 +11,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 public record ProcedureItemRequest(
+        @Schema(description = "시술 종류 (SCALING=스케일링, PDT_PTT=PDT/PTT, EXTRACTION_INJECTION=압출/염증주사, IPL_LASER_TONING=IPL/레이저토닝)")
         @NotNull(message = "시술 종류는 필수입니다.")
         ProcedureType procedureType,
 
@@ -24,6 +26,7 @@ public record ProcedureItemRequest(
         @Positive(message = "총 회차는 1 이상이어야 합니다.")
         Integer totalCount,
 
+        @Schema(description = "시술 부위 (FULL_FACE=전체 얼굴, T_ZONE=T존, BUTTERFLY_ZONE=나비존, JAW=턱, CHEEK=볼)")
         @NotEmpty(message = "시술 부위는 최소 1개 이상이어야 합니다.")
         List<@NotNull(message = "시술 부위 값은 비어있을 수 없습니다.") ProcedureAreaType> areas
 ) {
