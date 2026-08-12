@@ -59,6 +59,14 @@ public class RoutineService {
         return RoutineSnapshot.from(getRoutineOrThrow(routineId));
     }
 
+    /** 날짜 내림차순 상위 N개 - AI 체크리스트 생성 시 최근 컨디션 참고용 컨텍스트로 쓰인다. */
+    public List<RoutineSnapshot> getRecentRoutineSnapshots(Long courseId, int limit) {
+        return routineRepository.findByCourseIdOrderByRoutineDateDesc(courseId).stream()
+                .limit(limit)
+                .map(RoutineSnapshot::from)
+                .toList();
+    }
+
     /** 현재 진행중인 코스의 오늘 루틴 id (재접속 등으로 routineId를 다시 얻기 위한 조회). */
     public Optional<Long> getTodayRoutineId() {
         return courseService.getCurrentCourse()

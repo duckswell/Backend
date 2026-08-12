@@ -7,7 +7,8 @@ import org.springframework.http.HttpStatus;
 @Getter
 public enum DashboardErrorCode implements ErrorCode {
 
-    LLM_RESPONSE_INVALID(HttpStatus.INTERNAL_SERVER_ERROR, "DA001", "AI 체크리스트 응답을 처리할 수 없습니다. 잠시 후 다시 시도해주세요.");
+    LLM_RESPONSE_INVALID(HttpStatus.INTERNAL_SERVER_ERROR, "DA001", "AI 체크리스트 응답을 처리할 수 없습니다. 잠시 후 다시 시도해주세요."),
+    CHECKLIST_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "DA002", "체크리스트 항목을 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String code;
