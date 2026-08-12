@@ -81,6 +81,22 @@ class WeatherCareBannerServiceTest {
     }
 
     @Test
+    void 자외선이_높음이면_노출_주의_카드_상태가_내려간다() {
+        // given
+        givenDailyCourseWithWeather(weather(6.0, 50, 14.5));
+
+        // when
+        WeatherCareBannerResponse banner = weatherCareBannerService.getBanner(null, null).orElseThrow();
+
+        // then
+        assertThat(banner.uv()).satisfies(card -> {
+            assertThat(card.value()).isEqualTo(6.0);
+            assertThat(card.level()).isEqualTo("높음");
+            assertThat(card.cardStatus()).isEqualTo("노출 주의");
+        });
+    }
+
+    @Test
     void 습도_매우낮음이_심각도가_더_높아서_자외선_높음보다_우선한다() {
         // given
         givenDailyCourseWithWeather(weather(6.0, 20, 10));

@@ -101,7 +101,7 @@ public class WeatherCareBannerService {
             return new WeatherIndicatorCard(uvIndex, "매우높음", "외출주의");
         }
         if (uvIndex >= UV_HIGH_THRESHOLD) {
-            return new WeatherIndicatorCard(uvIndex, "높음", "노출주의");
+            return new WeatherIndicatorCard(uvIndex, "높음", "노출 주의");
         }
         if (uvIndex >= UV_MODERATE_THRESHOLD) {
             return new WeatherIndicatorCard(uvIndex, "보통", "차단필요");
