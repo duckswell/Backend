@@ -26,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class ChecklistService {
 
     private static final int RECENT_ROUTINE_LOOKBACK = 3;
@@ -41,8 +40,13 @@ public class ChecklistService {
     /**
      * 오늘, 그리고 지금 진행 중인 코스 기준으로 이미 생성된 항목이 있으면 재사용하고, 없을 때만 새로 생성한다.
      * 코스가 바뀌면(FOCUS↔DAILY 전환, 코스 재시작 등) 같은 날이어도 courseId가 달라져 곧바로 새로 생성된다.
+     *
+     * 의도적으로 이 메서드엔 @Transactional을 걸지 않는다 - 캐시 조회/저장 사이에 WeatherClient(최대
+     * 10초)·LlmChecklistClient(최대 60초) 외부 호출이 끼어 있어서, 메서드 전체를 하나의 트랜잭션으로
+     * 묶으면 그 시간만큼 DB 커넥션을 점유해 커넥션 풀 고갈로 이어질 수 있다. 대신 courseService/
+     * routineService/procedureService(각각 클래스 레벨 @Transactional(readOnly=true))와
+     * checklistItemRepository의 개별 호출이 각자 짧은 트랜잭션을 갖도록 둔다.
      */
-    @Transactional
     public List<ChecklistItemResponse> getTodayChecklist(Double lat, Double lon) {
         Optional<CurrentCourseResponse> currentCourse = courseService.getCurrentCourse();
         if (currentCourse.isEmpty()) {
