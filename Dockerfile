@@ -13,7 +13,9 @@ RUN chmod +x gradlew
 RUN ./gradlew dependencies --no-daemon || true
 
 # 소스 복사 후 실행 가능한 .jar 파일로 빌드
+# COPY . .가 git이 추적 중인 gradlew(실행권한 없을 수 있음)로 다시 덮어쓰므로 여기서도 chmod 필요
 COPY . .
+RUN chmod +x gradlew
 RUN ./gradlew clean bootJar --no-daemon -x test
 
 # ===== 2) RUNTIME STAGE =====
