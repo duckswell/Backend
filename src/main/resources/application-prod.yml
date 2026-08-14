@@ -22,7 +22,7 @@ aws:
   access-key: ${AWS_ACCESS_KEY_ID}
   secret-key: ${AWS_SECRET_ACCESS_KEY}
   s3:
-    bucket: duckswell
+    bucket: duckswell-bucket
 
 # [AI 사진 분석 기능 - python venv/스크립트]
 # Docker 이미지 빌드 시점에 duckswellAI의 필요한 4개 항목(src/features/, scripts/analyze.py,
