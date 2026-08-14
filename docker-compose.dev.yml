@@ -1,0 +1,40 @@
+services:
+  duckswell-mysql:
+    image: mysql:8.0.43
+    container_name: duckswell-mysql-dev
+    environment:
+      MYSQL_ROOT_PASSWORD: duckswell_root
+      MYSQL_DATABASE: duckswell
+      MYSQL_USER: duckswell
+      MYSQL_PASSWORD: duckswell_pw
+      TZ: Asia/Seoul
+    command: [
+      "--default-authentication-plugin=caching_sha2_password",
+      "--character-set-server=utf8mb4",
+      "--collation-server=utf8mb4_unicode_ci"
+    ]
+    ports:
+      - "13306:3306"
+    volumes:
+      - ./_vol/mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pduckswell_root"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:      # app 이하 코드를 도커 이미지 빌드 후 추가!
+    image: duckswell-app:local
+    container_name: duckswell-app-dev
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - DB_URL=jdbc:mysql://duckswell-mysql:3306/duckswell?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      - DB_USERNAME=duckswell
+      - DB_PASSWORD=duckswell_pw
+    env_file:
+      - .env.dev
+    depends_on:
+      - duckswell-mysql
+    restart: unless-stopped

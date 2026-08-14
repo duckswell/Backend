@@ -1,0 +1,7 @@
+opencv-python
+numpy
+pandas
+openpyxl
+scikit-learn
+scikit-image
+mediapipe==0.10.14
