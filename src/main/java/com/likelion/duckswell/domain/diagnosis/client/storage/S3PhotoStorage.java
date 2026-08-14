@@ -12,6 +12,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -22,8 +24,9 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 /**
  * PhotoStorage의 S3 구현체. prod 프로필에서만 뜬다.
- * 인증은 IAM Role 기반(DefaultCredentialsProvider) access key/secret을 코드나 설정에 직접 넣지 않는다.
- * 배포 인스턴스(EC2 등)에 S3 접근 권한이 있는 IAM Role이 붙어있어야 동작한다.
+ * 인증은 Access Key/Secret 환경변수(aws.access-key/aws.secret-key) 기반 StaticCredentialsProvider를 쓴다.
+ * 가비아 서버 등 AWS EC2가 아닌 환경으로 옮겨도(인스턴스 메타데이터 서비스가 없어도) 그대로 동작해야 해서
+ * IAM Role 대신 이 방식을 쓴다.
  *
  * analyze.py/check_photo.py는 로컬 파일 경로만 읽을 수 있어서, resolvePath()는 S3 객체를
  * 로컬 임시 파일로 내려받은 뒤 그 경로를 돌려준다.
@@ -39,11 +42,14 @@ public class S3PhotoStorage implements PhotoStorage {
 
     public S3PhotoStorage(
             @Value("${aws.region}") String region,
+            @Value("${aws.access-key}") String accessKey,
+            @Value("${aws.secret-key}") String secretKey,
             @Value("${aws.s3.bucket}") String bucket
     ) {
         this.bucket = bucket;
         this.s3Client = S3Client.builder()
                 .region(Region.of(region))
+                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)))
                 .build();
     }
 
