@@ -13,10 +13,11 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * PhotoStorage의 로컬 디스크 구현체. local 프로필에서만.
- * 배포 환경은 별도 구현체(S3 등)를 추가해서 그쪽 프로필에 연결.
+ * PhotoStorage의 로컬 디스크 구현체. local(IDE 개발)/dev(로컬 풀도커 검증) 프로필에서 뜬다.
+ * dev도 컨테이너 로컬 디스크에 저장하면 충분하고, CV 스크립트도 어차피 로컬 파일 경로가 필요해서
+ * S3까지 갈 필요가 없다. 배포 환경(prod)은 별도 구현체(S3)를 그쪽 프로필에 연결.
  */
-@Profile("local")
+@Profile({"local", "dev"})
 @Component
 public class LocalPhotoStorage implements PhotoStorage {
 

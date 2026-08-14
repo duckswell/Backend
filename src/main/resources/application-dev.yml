@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+openai:
+  api-key: ${OPENAI_API_KEY}
+  model: gpt-4o-mini
+
+weather:
+  api-key: ${WEATHER_API_KEY}
+
+# 로컬 풀도커 검증(docker-compose.dev.yml) 전용 프로필.
+# 사진 저장은 S3가 아니라 로컬 디스크(LocalPhotoStorage, @Profile에 dev 포함)를 쓰고,
+# 파이썬 경로는 Dockerfile이 이미지 안에 심어둔 고정 경로를 그대로 쓴다.
+duckswell-ai:
+  python-path: ${DUCKSWELL_AI_PYTHON_PATH:/opt/venv/bin/python}
+  scripts-path: ${DUCKSWELL_AI_SCRIPTS_PATH:/app/ai/scripts}
+
+app:
+  upload-dir: ${APP_UPLOAD_DIR:/app/uploads}
