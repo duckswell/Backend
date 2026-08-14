@@ -3,6 +3,8 @@ services:
     image: mysql:8.0
     container_name: duckswell-mysql
     restart: unless-stopped
+    command: ["--innodb-buffer-pool-size=128M"]
+    mem_limit: 350m
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
       MYSQL_DATABASE: duckswell
@@ -19,6 +21,10 @@ services:
     image: naeuun/duckswell:latest
     container_name: duckswell-app
     restart: unless-stopped
+    # JVM 힙(Xmx280m) + CV 분석 시 뜨는 Python 서브프로세스(mediapipe/opencv)가 같은 컨테이너
+    # 메모리를 나눠 쓰므로, 힙보다 넉넉하게 잡는다 (micro 1GB 기준: mysql 350m + app 600m = 950m,
+    # 나머지 ~70m은 OS/nginx/sshd 몫 - 빠듯하니 실사용 트래픽 늘면 재점검 필요).
+    mem_limit: 600m
     depends_on:
       mysql:
         condition: service_healthy

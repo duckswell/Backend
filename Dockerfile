@@ -25,7 +25,10 @@ FROM eclipse-temurin:21-jre-jammy
 ENV TZ=Asia/Seoul \
     DEBIAN_FRONTEND=noninteractive \
     PYTHONIOENCODING=utf-8 \
-    JAVA_OPTS="-XX:+UseG1GC -XX:MaxRAMPercentage=75 -Duser.timezone=Asia/Seoul"
+    JAVA_OPTS="-XX:+UseG1GC -Xms128m -Xmx280m -Duser.timezone=Asia/Seoul"
+# 힙을 퍼센트(MaxRAMPercentage)가 아니라 고정값으로 잡는다 - 컨테이너 메모리 제한(mem_limit) 안에서
+# CV 분석 때 뜨는 Python 서브프로세스(mediapipe/opencv)가 같은 컨테이너 메모리를 나눠 써야 해서,
+# JVM 힙이 너무 크면 그만큼 Python 쪽이 OOM날 여유가 없어진다. 1GB(micro) 환경 기준으로 산정.
 WORKDIR /opt/app
 
 # python3.11 + venv + opencv/mediapipe가 필요로 하는 최소 시스템 라이브러리 (opencv-python 비-headless라 필요).
