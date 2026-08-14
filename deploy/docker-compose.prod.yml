@@ -1,0 +1,40 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: duckswell-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: duckswell
+      TZ: Asia/Seoul
+    volumes:
+      - duckswell-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    image: naeuun/duckswell:latest
+    container_name: duckswell-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      WEATHER_API_KEY: ${WEATHER_API_KEY}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      DUCKSWELL_AI_PYTHON_PATH: ${DUCKSWELL_AI_PYTHON_PATH}
+      DUCKSWELL_AI_SCRIPTS_PATH: ${DUCKSWELL_AI_SCRIPTS_PATH}
+    ports:
+      - "127.0.0.1:8080:8080"
+
+volumes:
+  duckswell-mysql-data:
