@@ -135,7 +135,7 @@ class RecoveryBannerServiceTest {
         RecoveryBannerResponse banner = recoveryBannerService.getBanner().orElseThrow();
 
         // then
-        assertThat(banner.summaryMessage()).isEqualTo("시술 후 1일째, 피부 진정에 집중할 때예요");
+        assertThat(banner.summaryMessage()).isEqualTo("시술 후 1일째,\n피부 진정에 집중할 때예요");
     }
 
     @Test
@@ -148,7 +148,7 @@ class RecoveryBannerServiceTest {
         RecoveryBannerResponse banner = recoveryBannerService.getBanner().orElseThrow();
 
         // then
-        assertThat(banner.summaryMessage()).isEqualTo("시술 후 5일째, 피부 장벽을 채워줄 시기예요");
+        assertThat(banner.summaryMessage()).isEqualTo("시술 후 5일째,\n피부 장벽을 채워줄 시기예요");
     }
 
     @Test
@@ -161,7 +161,7 @@ class RecoveryBannerServiceTest {
         RecoveryBannerResponse banner = recoveryBannerService.getBanner().orElseThrow();
 
         // then
-        assertThat(banner.summaryMessage()).isEqualTo("시술 후 10일째, 흔적 개선을 시작해도 좋은 시기예요");
+        assertThat(banner.summaryMessage()).isEqualTo("시술 후 10일째,\n흔적 개선을 시작해도 좋은 시기예요");
     }
 
     @Test
@@ -177,7 +177,7 @@ class RecoveryBannerServiceTest {
         RecoveryBannerResponse banner = recoveryBannerService.getBanner().orElseThrow();
 
         // then
-        assertThat(banner.summaryMessage()).isEqualTo("시술 후 5일째, 피부 장벽을 채워줄 시기예요");
+        assertThat(banner.summaryMessage()).isEqualTo("시술 후 5일째,\n피부 장벽을 채워줄 시기예요");
     }
 
     private void givenFocusCourse(LocalDate procedureDate) {
