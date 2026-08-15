@@ -19,9 +19,16 @@ public interface DashboardApi {
             description = """
                     현재 날씨(자외선, 습도, 미세먼지) 기준으로 지표별 카드와 오늘의 종합 피부 케어 문구를 반환합니다.
 
-                    uv/humidity/dust: 각 지표의 실측값(value), 등급 구간(level), 카드 상태명(cardStatus)
-                    summaryMessage: 세 지표 중 가장 주의가 필요한 지표를 기준으로 결정된 종합 안내 문구
+                    uv/humidity/dust: 각 지표의 실측값(value), 등급 구간(level), 카드 상태명(cardStatus),
+                    사이렌 노출 여부(siren, boolean)
+                    summaryMessage: 세 지표 중 가장 주의가 필요한 지표를 기준으로 결정된 종합 안내 문구.
+                    줄바꿈 위치에 개행 문자(\\n)가 포함되어 있으므로 클라이언트에서 그대로 개행 처리하면 됩니다.
                     triggerFactor: summaryMessage가 어떤 지표/등급 때문에 나왔는지 나타내는 근거 (예: "자외선 매우높음·위험", "모두 양호")
+
+                    siren은 지표별 카드 상태 기준으로 다음 구간부터 true입니다.
+                    - 자외선: 높음(6) 이상
+                    - 습도: 30% 미만이거나 70% 이상
+                    - 미세먼지: 81 이상
 
                     세 지표를 각각 심각도(양호/주의/심각)로 평가해 가장 심각도가 높은 지표 하나를 골라 종합 문구를 결정합니다.
                     심각도가 동일하게 겹치는 경우에만 자외선 > 습도 > 미세먼지 순으로 우선합니다.
@@ -29,7 +36,7 @@ public interface DashboardApi {
                     집중 코스가 진행 중일 때만 배너를 숨기며(집중 코스는 별도 회복 배너가 대신 노출됨),
                     데일리 코스이거나 진행 중인 코스가 아예 없으면(신규 유저) 배너를 노출합니다.
                     진행 중인 코스가 없을 때는 지표 카드는 그대로 실제 날씨값을 반환하되, summaryMessage는
-                    "시술 정보를 등록하고 집중 코스를 시작해보세요"로 고정됩니다.
+                    "시술 정보를 등록하고\\n집중 코스를 시작해보세요"로 고정됩니다.
                     """
     )
     ResponseEntity<ApiResponse<WeatherCareBannerResponse>> getWeatherCareBanner(
@@ -48,6 +55,7 @@ public interface DashboardApi {
                     고정되고, 오늘 진단 기록이 없으면 current도 0입니다.
                     summaryMessage: 가장 최근 등록된 시술일(없으면 코스 시작일) 기준 경과일수로 결정되는
                     회복 단계 안내 문구입니다 - 점수와 무관하게 날짜로만 결정됩니다.
+                    줄바꿈 위치에 개행 문자(\\n)가 포함되어 있으므로 클라이언트에서 그대로 개행 처리하면 됩니다.
                     """
     )
     ResponseEntity<ApiResponse<RecoveryBannerResponse>> getRecoveryBanner();
