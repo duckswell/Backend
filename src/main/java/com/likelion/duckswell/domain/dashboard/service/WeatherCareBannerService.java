@@ -29,10 +29,10 @@ public class WeatherCareBannerService {
     private static final int HUMIDITY_VERY_HIGH_THRESHOLD = 80;
 
     private static final double DUST_GOOD_THRESHOLD = 30;
-    private static final double DUST_MODERATE_THRESHOLD = 80;
+    private static final double DUST_MODERATE_THRESHOLD = 81;
     private static final double DUST_BAD_THRESHOLD = 150;
 
-    private static final String ONBOARDING_SUMMARY_MESSAGE = "시술 정보를 등록하고 집중 코스를 시작해보세요";
+    private static final String ONBOARDING_SUMMARY_MESSAGE = "시술 정보를 등록하고\n집중 코스를 시작해보세요";
     private static final String ONBOARDING_TRIGGER_FACTOR = "코스 시작 전";
 
     private final WeatherService weatherService;
@@ -110,46 +110,47 @@ public class WeatherCareBannerService {
 
     private WeatherIndicatorCard resolveUvCard(double uvIndex) {
         if (uvIndex >= UV_EXTREME_THRESHOLD) {
-            return new WeatherIndicatorCard(uvIndex, "위험", "외출자제");
+            return new WeatherIndicatorCard(uvIndex, "위험", "외출자제", true);
         }
         if (uvIndex >= UV_VERY_HIGH_THRESHOLD) {
-            return new WeatherIndicatorCard(uvIndex, "매우높음", "외출주의");
+            return new WeatherIndicatorCard(uvIndex, "매우높음", "외출주의", true);
         }
         if (uvIndex >= UV_HIGH_THRESHOLD) {
-            return new WeatherIndicatorCard(uvIndex, "높음", "노출 주의");
+            return new WeatherIndicatorCard(uvIndex, "높음", "노출 주의", true);
         }
         if (uvIndex >= UV_MODERATE_THRESHOLD) {
-            return new WeatherIndicatorCard(uvIndex, "보통", "차단필요");
+            return new WeatherIndicatorCard(uvIndex, "보통", "차단필요", false);
         }
-        return new WeatherIndicatorCard(uvIndex, "낮음", "부담적음");
+        return new WeatherIndicatorCard(uvIndex, "낮음", "부담적음", false);
     }
 
     private WeatherIndicatorCard resolveHumidityCard(int humidity) {
         if (humidity < HUMIDITY_VERY_LOW_THRESHOLD) {
-            return new WeatherIndicatorCard(humidity, "30%미만", "매우건조");
+            return new WeatherIndicatorCard(humidity, "30%미만", "매우건조", true);
         }
         if (humidity < HUMIDITY_LOW_THRESHOLD) {
-            return new WeatherIndicatorCard(humidity, "30~39%", "건조주의");
+            return new WeatherIndicatorCard(humidity, "30~39%", "건조주의", false);
         }
         if (humidity < HUMIDITY_HIGH_THRESHOLD) {
-            return new WeatherIndicatorCard(humidity, "40~69%", "적정");
+            return new WeatherIndicatorCard(humidity, "40~69%", "적정", false);
         }
         if (humidity < HUMIDITY_VERY_HIGH_THRESHOLD) {
-            return new WeatherIndicatorCard(humidity, "70~79%", "다소습함");
+            return new WeatherIndicatorCard(humidity, "70~79%", "다소습함", true);
         }
-        return new WeatherIndicatorCard(humidity, "80%이상", "매우습함");
+        return new WeatherIndicatorCard(humidity, "80%이상", "매우습함", true);
     }
 
     private WeatherIndicatorCard resolveDustCard(double pm10) {
+        boolean siren = pm10 >= DUST_MODERATE_THRESHOLD;
         if (pm10 > DUST_BAD_THRESHOLD) {
-            return new WeatherIndicatorCard(pm10, "매우나쁨", "외출자제");
+            return new WeatherIndicatorCard(pm10, "매우나쁨", "외출자제", siren);
         }
-        if (pm10 > DUST_MODERATE_THRESHOLD) {
-            return new WeatherIndicatorCard(pm10, "나쁨", "자극주의");
+        if (pm10 >= DUST_MODERATE_THRESHOLD) {
+            return new WeatherIndicatorCard(pm10, "나쁨", "자극주의", siren);
         }
         if (pm10 > DUST_GOOD_THRESHOLD) {
-            return new WeatherIndicatorCard(pm10, "보통", "공기보통");
+            return new WeatherIndicatorCard(pm10, "보통", "공기보통", false);
         }
-        return new WeatherIndicatorCard(pm10, "좋음", "공기쾌적");
+        return new WeatherIndicatorCard(pm10, "좋음", "공기쾌적", false);
     }
 }
