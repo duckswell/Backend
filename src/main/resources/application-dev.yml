@@ -12,6 +12,7 @@ spring:
 
 openai:
   api-key: ${OPENAI_API_KEY}
+  api-key-fallback: ${OPENAI_API_KEY_FALLBACK:}
   model: gpt-4o-mini
 
 weather:

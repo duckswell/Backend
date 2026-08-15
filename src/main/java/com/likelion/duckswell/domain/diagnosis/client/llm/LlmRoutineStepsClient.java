@@ -10,16 +10,12 @@ import com.likelion.duckswell.domain.procedure.dto.ProcedureResponse;
 import com.likelion.duckswell.domain.product.entity.ProductCategory;
 import com.likelion.duckswell.domain.routine.entity.RoutineDifficulty;
 import com.likelion.duckswell.domain.routine.entity.Symptom;
+import com.likelion.duckswell.global.client.llm.OpenAiChatClient;
 import com.likelion.duckswell.global.exception.CustomException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -27,7 +23,6 @@ import java.util.Map;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
@@ -41,78 +36,29 @@ import org.springframework.stereotype.Component;
 @Component
 public class LlmRoutineStepsClient {
 
-    private static final String CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions";
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(60);
-
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(15))
-            .build();
+    private final OpenAiChatClient openAiChatClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final String apiKey;
-    private final String model;
     private final String systemPrompt;
 
-    public LlmRoutineStepsClient(
-            @Value("${openai.api-key:}") String apiKey,
-            @Value("${openai.model:}") String model
-    ) {
-        this.apiKey = apiKey;
-        this.model = model;
+    public LlmRoutineStepsClient(OpenAiChatClient openAiChatClient) {
+        this.openAiChatClient = openAiChatClient;
         this.systemPrompt = loadSystemPrompt();
     }
 
     public LlmRoutineStepsResult generate(LlmRoutineStepsContext context) {
-        if (apiKey.isBlank() || model.isBlank()) {
-            log.error("openai.api-key / openai.model 설정이 없습니다. application-local.yml 또는 "
-                    + "application-prod.yml에 채워주세요.");
-            throw new CustomException(DiagnosisErrorCode.LLM_RESPONSE_INVALID);
-        }
         if (context.candidates() == null || context.candidates().isEmpty()) {
             log.error("성분 후보군이 비어 있어 루틴 스텝 스키마를 만들 수 없습니다. routine_type_ingredient 시드를 확인하세요.");
             throw new CustomException(DiagnosisErrorCode.LLM_RESPONSE_INVALID);
         }
 
         ObjectNode requestBody = buildRequestBody(context);
-
-        String responseBody;
-        try {
-            byte[] requestBytes = objectMapper.writeValueAsBytes(requestBody);
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(CHAT_COMPLETIONS_URL))
-                    .header("Authorization", "Bearer " + apiKey)
-                    .header("Content-Type", "application/json; charset=utf-8")
-                    .timeout(REQUEST_TIMEOUT)
-                    .POST(HttpRequest.BodyPublishers.ofByteArray(requestBytes))
-                    .build();
-            HttpResponse<byte[]> httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
-            responseBody = new String(httpResponse.body(), StandardCharsets.UTF_8);
-
-            if (httpResponse.statusCode() >= 400) {
-                log.error("OpenAI 호출 실패: status={}, body={}", httpResponse.statusCode(), responseBody);
-                throw new CustomException(DiagnosisErrorCode.LLM_RESPONSE_INVALID);
-            }
-        } catch (IOException | InterruptedException e) {
-            log.error("OpenAI 호출 실패", e);
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
-            throw new CustomException(DiagnosisErrorCode.LLM_RESPONSE_INVALID);
-        }
-
-        JsonNode response;
-        try {
-            response = objectMapper.readTree(responseBody);
-        } catch (IOException e) {
-            log.error("OpenAI 응답 JSON 파싱 실패: {}", responseBody, e);
-            throw new CustomException(DiagnosisErrorCode.LLM_RESPONSE_INVALID);
-        }
-
+        JsonNode response = openAiChatClient.call(requestBody, DiagnosisErrorCode.LLM_RESPONSE_INVALID);
         return parseResult(response, context.candidates());
     }
 
     private ObjectNode buildRequestBody(LlmRoutineStepsContext context) {
         ObjectNode root = objectMapper.createObjectNode();
-        root.put("model", model);
+        root.put("model", openAiChatClient.model());
         root.set("messages", buildMessages(context));
         root.set("response_format", buildResponseFormat(context));
         return root;
