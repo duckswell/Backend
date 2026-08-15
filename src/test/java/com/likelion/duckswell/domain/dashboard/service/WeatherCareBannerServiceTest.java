@@ -217,7 +217,7 @@ class WeatherCareBannerServiceTest {
     }
 
     @Test
-    void 습도가_매우낮으면_건조_문구가_노출된다() {
+    void 습도가_매우낮으면_건조_문구와_사이렌이_함께_노출된다() {
         // given
         givenDailyCourseWithWeather(weather(1.0, 29, 10));
 
@@ -227,6 +227,20 @@ class WeatherCareBannerServiceTest {
         // then
         assertThat(banner.summaryMessage()).isEqualTo("오늘은\n피부가 쉽게 건조해질 수 있어요");
         assertThat(banner.triggerFactor()).isEqualTo("습도 매우낮음");
+        assertThat(banner.humidity().siren()).isTrue();
+    }
+
+    @Test
+    void 습도가_정확히_30퍼센트면_사이렌이_울리지_않는다() {
+        // given
+        givenDailyCourseWithWeather(weather(1.0, 30, 10));
+
+        // when
+        WeatherCareBannerResponse banner = weatherCareBannerService.getBanner(null, null).orElseThrow();
+
+        // then
+        assertThat(banner.humidity().cardStatus()).isEqualTo("건조주의");
+        assertThat(banner.humidity().siren()).isFalse();
     }
 
     @Test
