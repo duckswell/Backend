@@ -29,7 +29,7 @@ public class WeatherCareBannerService {
     private static final int HUMIDITY_VERY_HIGH_THRESHOLD = 80;
 
     private static final double DUST_GOOD_THRESHOLD = 30;
-    private static final double DUST_MODERATE_THRESHOLD = 80;
+    private static final double DUST_MODERATE_THRESHOLD = 81;
     private static final double DUST_BAD_THRESHOLD = 150;
 
     private static final String ONBOARDING_SUMMARY_MESSAGE = "시술 정보를 등록하고\n집중 코스를 시작해보세요";
@@ -141,11 +141,12 @@ public class WeatherCareBannerService {
     }
 
     private WeatherIndicatorCard resolveDustCard(double pm10) {
+        boolean siren = pm10 >= DUST_MODERATE_THRESHOLD;
         if (pm10 > DUST_BAD_THRESHOLD) {
-            return new WeatherIndicatorCard(pm10, "매우나쁨", "외출자제", true);
+            return new WeatherIndicatorCard(pm10, "매우나쁨", "외출자제", siren);
         }
-        if (pm10 > DUST_MODERATE_THRESHOLD) {
-            return new WeatherIndicatorCard(pm10, "나쁨", "자극주의", true);
+        if (pm10 >= DUST_MODERATE_THRESHOLD) {
+            return new WeatherIndicatorCard(pm10, "나쁨", "자극주의", siren);
         }
         if (pm10 > DUST_GOOD_THRESHOLD) {
             return new WeatherIndicatorCard(pm10, "보통", "공기보통", false);

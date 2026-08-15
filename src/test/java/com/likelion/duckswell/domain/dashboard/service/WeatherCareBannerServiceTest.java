@@ -152,6 +152,32 @@ class WeatherCareBannerServiceTest {
     }
 
     @Test
+    void 미세먼지가_81_미만인_소수면_보통_카드에_사이렌이_울리지_않는다() {
+        // given
+        givenDailyCourseWithWeather(weather(1.0, 50, 80.9));
+
+        // when
+        WeatherCareBannerResponse banner = weatherCareBannerService.getBanner(null, null).orElseThrow();
+
+        // then
+        assertThat(banner.dust().cardStatus()).isEqualTo("공기보통");
+        assertThat(banner.dust().siren()).isFalse();
+    }
+
+    @Test
+    void 미세먼지가_정확히_81이면_나쁨_카드와_사이렌이_함께_울린다() {
+        // given
+        givenDailyCourseWithWeather(weather(1.0, 50, 81.0));
+
+        // when
+        WeatherCareBannerResponse banner = weatherCareBannerService.getBanner(null, null).orElseThrow();
+
+        // then
+        assertThat(banner.dust().cardStatus()).isEqualTo("자극주의");
+        assertThat(banner.dust().siren()).isTrue();
+    }
+
+    @Test
     void 습도_매우낮음이_심각도가_더_높아서_자외선_높음보다_우선한다() {
         // given
         givenDailyCourseWithWeather(weather(6.0, 20, 10));
