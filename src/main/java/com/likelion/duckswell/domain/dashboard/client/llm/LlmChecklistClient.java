@@ -11,19 +11,14 @@ import com.likelion.duckswell.domain.procedure.dto.ProcedureResponse;
 import com.likelion.duckswell.domain.routine.dto.RoutineSnapshot;
 import com.likelion.duckswell.domain.routine.entity.Symptom;
 import com.likelion.duckswell.domain.weather.dto.WeatherResponse;
+import com.likelion.duckswell.global.client.llm.OpenAiChatClient;
 import com.likelion.duckswell.global.exception.CustomException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
@@ -36,77 +31,28 @@ import org.springframework.stereotype.Component;
 @Component
 public class LlmChecklistClient {
 
-    private static final String CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions";
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(60);
     private static final int CHECKLIST_ITEM_COUNT = 2;
 
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(15))
-            .build();
+    private final OpenAiChatClient openAiChatClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final String apiKey;
-    private final String model;
     private final String focusSystemPrompt;
     private final String dailySystemPrompt;
 
-    public LlmChecklistClient(
-            @Value("${openai.api-key:}") String apiKey,
-            @Value("${openai.model:}") String model
-    ) {
-        this.apiKey = apiKey;
-        this.model = model;
+    public LlmChecklistClient(OpenAiChatClient openAiChatClient) {
+        this.openAiChatClient = openAiChatClient;
         this.focusSystemPrompt = loadSystemPrompt("prompts/checklist-focus-system.txt");
         this.dailySystemPrompt = loadSystemPrompt("prompts/checklist-daily-system.txt");
     }
 
     public LlmChecklistResult generate(LlmChecklistContext context) {
-        if (apiKey.isBlank() || model.isBlank()) {
-            log.error("openai.api-key / openai.model 설정이 없습니다. application-local.yml 또는 "
-                    + "application-prod.yml에 채워주세요.");
-            throw new CustomException(DashboardErrorCode.LLM_RESPONSE_INVALID);
-        }
-
         ObjectNode requestBody = buildRequestBody(context);
-
-        String responseBody;
-        try {
-            byte[] requestBytes = objectMapper.writeValueAsBytes(requestBody);
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(CHAT_COMPLETIONS_URL))
-                    .header("Authorization", "Bearer " + apiKey)
-                    .header("Content-Type", "application/json; charset=utf-8")
-                    .timeout(REQUEST_TIMEOUT)
-                    .POST(HttpRequest.BodyPublishers.ofByteArray(requestBytes))
-                    .build();
-            HttpResponse<byte[]> httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
-            responseBody = new String(httpResponse.body(), StandardCharsets.UTF_8);
-
-            if (httpResponse.statusCode() >= 400) {
-                log.error("OpenAI 호출 실패: status={}, body={}", httpResponse.statusCode(), responseBody);
-                throw new CustomException(DashboardErrorCode.LLM_RESPONSE_INVALID);
-            }
-        } catch (IOException | InterruptedException e) {
-            log.error("OpenAI 호출 실패", e);
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
-            throw new CustomException(DashboardErrorCode.LLM_RESPONSE_INVALID);
-        }
-
-        JsonNode response;
-        try {
-            response = objectMapper.readTree(responseBody);
-        } catch (IOException e) {
-            log.error("OpenAI 응답 JSON 파싱 실패: {}", responseBody, e);
-            throw new CustomException(DashboardErrorCode.LLM_RESPONSE_INVALID);
-        }
-
+        JsonNode response = openAiChatClient.call(requestBody, DashboardErrorCode.LLM_RESPONSE_INVALID);
         return parseResult(response);
     }
 
     private ObjectNode buildRequestBody(LlmChecklistContext context) {
         ObjectNode root = objectMapper.createObjectNode();
-        root.put("model", model);
+        root.put("model", openAiChatClient.model());
         root.set("messages", buildMessages(context));
         root.set("response_format", buildResponseFormat());
         return root;
