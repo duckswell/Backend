@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -123,6 +124,18 @@ public class CourseService {
                                 .toList()
                 ))
                 .toList();
+    }
+
+    /**
+     * 아직 오늘의 Routine이 없는 시점(데일리 루틴 타입을 방금 선택한 직후)에, 그 루틴 타입의 고정
+     * 후보 성분 전체를 기준으로 추천 제품을 조회한다. 스텝별 카테고리가 아직 없으므로 카테고리
+     * 제한 없이(null) 성분당 제품 하나씩 뽑는다.
+     */
+    public List<RecommendedProductResponse> getRecommendedProductsByRoutineType(RoutineTypeCode routineTypeCode) {
+        List<ProductPickCandidate> candidates = routineTypeIngredientRepository.findByRoutineType_Code(routineTypeCode).stream()
+                .map(ingredient -> new ProductPickCandidate(ingredient.getIngredientId(), null))
+                .toList();
+        return pickRecommendedProducts(candidates);
     }
 
     public Optional<CurrentCourseResponse> getCurrentCourse() {
@@ -214,7 +227,7 @@ public class CourseService {
     }
 
     /**
-     * (성분, 카테고리) 조합마다 상점 제품을 1개씩 뽑는다(개수 상한 없음, 같은 조합 중복 제거).
+     * (성분, 카테고리) 조합마다 상점 제품을 랜덤으로 1개씩 뽑는다(개수 상한 없음, 같은 조합 중복 제거).
      * 해당 조합에 제품이 하나도 없으면 결과에서 그냥 빠진다.
      */
     public List<RecommendedProductResponse> pickRecommendedProducts(List<ProductPickCandidate> candidates) {
@@ -231,7 +244,8 @@ public class CourseService {
             String ingredientName = ingredientRepository.findById(candidate.ingredientId())
                     .map(Ingredient::getName)
                     .orElse("성분");
-            picked.add(new RecommendedProductResponse(ingredientName, products.get(0)));
+            ProductResponse randomProduct = products.get(ThreadLocalRandom.current().nextInt(products.size()));
+            picked.add(new RecommendedProductResponse(ingredientName, randomProduct));
         }
         return picked;
     }
