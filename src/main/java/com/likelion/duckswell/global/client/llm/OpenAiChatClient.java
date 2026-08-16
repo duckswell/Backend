@@ -38,8 +38,8 @@ public class OpenAiChatClient {
     private final String apiKey;
     private final String fallbackApiKey;
     private final String model;
-    /** 앱 프로세스 시작 이후 누적 호출 시도 횟수 - 재시작하면 0부터 다시 센다(서버 재기동 전까지의 로그 기준 카운트). */
-    private final AtomicInteger callAttemptCount = new AtomicInteger(0);
+    /** 앱 프로세스 시작 이후 누적 "성공" 호출 횟수 - rate limit 등으로 거부된 시도는 세지 않는다(재시작 시 0부터 다시 셈). */
+    private final AtomicInteger callSuccessCount = new AtomicInteger(0);
 
     public OpenAiChatClient(
             @Value("${openai.api-key:}") String apiKey,
@@ -100,7 +100,6 @@ public class OpenAiChatClient {
                     .timeout(REQUEST_TIMEOUT)
                     .POST(HttpRequest.BodyPublishers.ofByteArray(requestBytes))
                     .build();
-            log.info("OpenAI API 호출 시도 (누적 {}번째)", callAttemptCount.incrementAndGet());
             HttpResponse<byte[]> httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
             String responseBody = new String(httpResponse.body(), StandardCharsets.UTF_8);
 
@@ -112,6 +111,7 @@ public class OpenAiChatClient {
                 log.error("OpenAI 호출 실패: status={}, body={}", httpResponse.statusCode(), responseBody);
                 throw new CustomException(errorCode);
             }
+            log.info("OpenAI API 호출 성공 (누적 {}번째)", callSuccessCount.incrementAndGet());
             return responseBody;
         } catch (IOException | InterruptedException e) {
             log.error("OpenAI 호출 실패", e);
