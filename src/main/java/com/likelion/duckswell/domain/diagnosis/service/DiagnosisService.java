@@ -199,8 +199,8 @@ public class DiagnosisService {
 
     /**
      * 어제 루틴이 완료된 경우 "어제 요약 + 오늘 회복 단계"를, 아니면 "오늘 회복 단계"만 서술한다.
-     * 어제 기록 기준 캐시된 값이 있으면 LLM을 다시 호출하지 않고 그대로 반환한다
-     * (어제 기록이 없는 경우는 캐싱할 대상 자체가 없어 매 호출마다 새로 생성한다. 코스 첫날처럼 드문 케이스).
+     * 두 경우 모두 캐시된 값이 있으면 LLM을 다시 호출하지 않고 그대로 반환한다
+     * (어제 기록이 없는 경우는 오늘 루틴 row에 캐싱한다 - 오늘 루틴이 아직 없으면 캐싱할 대상이 없어 매번 새로 생성한다).
      */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public RecoverySummaryResponse getRecoverySummary(Long courseId) {
@@ -221,8 +221,14 @@ public class DiagnosisService {
             return new RecoverySummaryResponse(result.recoveryStageSummaryText());
         }
 
+        Optional<RoutineSnapshot> today = routineService.findRoutineSnapshot(courseId, LocalDate.now());
+        if (today.isPresent() && today.get().recoveryStageSummaryText() != null) {
+            return new RecoverySummaryResponse(today.get().recoveryStageSummaryText());
+        }
+
         LlmRecoveryStageResult result = llmRecoveryStageClient.summarize(
                 new LlmRecoveryStageContext(dayNumber, false, List.of(), null, null));
+        today.ifPresent(routine -> routineService.cacheRecoveryStageSummary(routine.id(), result.recoveryStageSummaryText()));
         return new RecoverySummaryResponse(result.recoveryStageSummaryText());
     }
 
