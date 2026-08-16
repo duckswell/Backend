@@ -105,6 +105,11 @@ public class OpenAiChatClient {
 
             if (httpResponse.statusCode() == RATE_LIMIT_STATUS) {
                 log.error("OpenAI 호출 실패(rate limit): status={}, body={}", httpResponse.statusCode(), responseBody);
+                log.error("OpenAI 레이트리밋 정보: 남은 요청 수={}, 요청 리셋까지={}, 남은 토큰 수={}, 토큰 리셋까지={}",
+                        httpResponse.headers().firstValue("x-ratelimit-remaining-requests").orElse("정보 없음"),
+                        httpResponse.headers().firstValue("x-ratelimit-reset-requests").orElse("정보 없음"),
+                        httpResponse.headers().firstValue("x-ratelimit-remaining-tokens").orElse("정보 없음"),
+                        httpResponse.headers().firstValue("x-ratelimit-reset-tokens").orElse("정보 없음"));
                 return null;
             }
             if (httpResponse.statusCode() >= 400) {
