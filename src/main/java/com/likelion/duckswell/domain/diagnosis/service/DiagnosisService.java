@@ -205,9 +205,10 @@ public class DiagnosisService {
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public RecoverySummaryResponse getRecoverySummary(Long courseId) {
         CourseResponse course = courseService.getCourse(courseId);
-        int dayNumber = (int) ChronoUnit.DAYS.between(course.startedAt(), LocalDate.now()) + 1;
+        LocalDate today = LocalDate.now();
+        int dayNumber = (int) ChronoUnit.DAYS.between(course.startedAt(), today) + 1;
 
-        Optional<RoutineSnapshot> yesterday = routineService.findRoutineSnapshot(courseId, LocalDate.now().minusDays(1));
+        Optional<RoutineSnapshot> yesterday = routineService.findRoutineSnapshot(courseId, today.minusDays(1));
         boolean hasYesterday = yesterday.isPresent() && yesterday.get().completedAt() != null;
 
         if (hasYesterday) {
@@ -221,14 +222,14 @@ public class DiagnosisService {
             return new RecoverySummaryResponse(result.recoveryStageSummaryText());
         }
 
-        Optional<RoutineSnapshot> today = routineService.findRoutineSnapshot(courseId, LocalDate.now());
-        if (today.isPresent() && today.get().recoveryStageSummaryText() != null) {
-            return new RecoverySummaryResponse(today.get().recoveryStageSummaryText());
+        Optional<RoutineSnapshot> todayRoutine = routineService.findRoutineSnapshot(courseId, today);
+        if (todayRoutine.isPresent() && todayRoutine.get().recoveryStageSummaryText() != null) {
+            return new RecoverySummaryResponse(todayRoutine.get().recoveryStageSummaryText());
         }
 
         LlmRecoveryStageResult result = llmRecoveryStageClient.summarize(
                 new LlmRecoveryStageContext(dayNumber, false, List.of(), null, null));
-        today.ifPresent(routine -> routineService.cacheRecoveryStageSummary(routine.id(), result.recoveryStageSummaryText()));
+        todayRoutine.ifPresent(routine -> routineService.cacheRecoveryStageSummary(routine.id(), result.recoveryStageSummaryText()));
         return new RecoverySummaryResponse(result.recoveryStageSummaryText());
     }
 
