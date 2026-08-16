@@ -12,6 +12,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -37,6 +38,8 @@ public class OpenAiChatClient {
     private final String apiKey;
     private final String fallbackApiKey;
     private final String model;
+    /** 앱 프로세스 시작 이후 누적 호출 시도 횟수 - 재시작하면 0부터 다시 센다(서버 재기동 전까지의 로그 기준 카운트). */
+    private final AtomicInteger callAttemptCount = new AtomicInteger(0);
 
     public OpenAiChatClient(
             @Value("${openai.api-key:}") String apiKey,
@@ -97,6 +100,7 @@ public class OpenAiChatClient {
                     .timeout(REQUEST_TIMEOUT)
                     .POST(HttpRequest.BodyPublishers.ofByteArray(requestBytes))
                     .build();
+            log.info("OpenAI API 호출 시도 (누적 {}번째)", callAttemptCount.incrementAndGet());
             HttpResponse<byte[]> httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
             String responseBody = new String(httpResponse.body(), StandardCharsets.UTF_8);
 
