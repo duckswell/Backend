@@ -125,6 +125,18 @@ public class CourseService {
                 .toList();
     }
 
+    /**
+     * 아직 오늘의 Routine이 없는 시점(데일리 루틴 타입을 방금 선택한 직후)에, 그 루틴 타입의 고정
+     * 후보 성분 전체를 기준으로 추천 제품을 조회한다. 스텝별 카테고리가 아직 없으므로 카테고리
+     * 제한 없이(null) 성분당 제품 하나씩 뽑는다.
+     */
+    public List<RecommendedProductResponse> getRecommendedProductsByRoutineType(RoutineTypeCode routineTypeCode) {
+        List<ProductPickCandidate> candidates = routineTypeIngredientRepository.findByRoutineType_Code(routineTypeCode).stream()
+                .map(ingredient -> new ProductPickCandidate(ingredient.getIngredientId(), null))
+                .toList();
+        return pickRecommendedProducts(candidates);
+    }
+
     public Optional<CurrentCourseResponse> getCurrentCourse() {
         return courseRepository.findByMemberIdAndStatus(Member.DEFAULT_ID, CourseStatus.IN_PROGRESS)
                 .map(course -> CurrentCourseResponse.of(course, calculateStreakDays(course.getId(), null)));

@@ -4,7 +4,9 @@ import com.likelion.duckswell.domain.course.dto.CourseResponse;
 import com.likelion.duckswell.domain.course.dto.CourseStartRequest;
 import com.likelion.duckswell.domain.course.dto.CourseSymptomSummaryResponse;
 import com.likelion.duckswell.domain.course.dto.CurrentCourseResponse;
+import com.likelion.duckswell.domain.course.dto.RecommendedProductResponse;
 import com.likelion.duckswell.domain.course.dto.RecoverySummaryResponse;
+import com.likelion.duckswell.domain.course.entity.RoutineTypeCode;
 import com.likelion.duckswell.domain.course.service.CourseService;
 import com.likelion.duckswell.domain.diagnosis.service.DiagnosisService;
 import com.likelion.duckswell.global.response.ApiResponse;
@@ -22,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/courses")
 @RequiredArgsConstructor
-public class CourseController implements CourseApi {
+public class  CourseController implements CourseApi {
 
     private final CourseService courseService;
     private final DiagnosisService diagnosisService;
@@ -67,5 +69,12 @@ public class CourseController implements CourseApi {
     @GetMapping("/{courseId}/recovery-summary")
     public ResponseEntity<ApiResponse<RecoverySummaryResponse>> getRecoverySummary(@PathVariable Long courseId) {
         return ResponseEntity.ok(ApiResponse.success(diagnosisService.getRecoverySummary(courseId)));
+    }
+
+    @Override
+    @GetMapping("/routine-types/{routineTypeCode}/recommended-products")
+    public ResponseEntity<ApiResponse<List<RecommendedProductResponse>>> getRecommendedProductsByRoutineType(
+            @PathVariable RoutineTypeCode routineTypeCode) {
+        return ResponseEntity.ok(ApiResponse.success(courseService.getRecommendedProductsByRoutineType(routineTypeCode)));
     }
 }

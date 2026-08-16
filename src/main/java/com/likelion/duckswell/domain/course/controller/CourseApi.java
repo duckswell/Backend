@@ -4,7 +4,9 @@ import com.likelion.duckswell.domain.course.dto.CourseResponse;
 import com.likelion.duckswell.domain.course.dto.CourseStartRequest;
 import com.likelion.duckswell.domain.course.dto.CourseSymptomSummaryResponse;
 import com.likelion.duckswell.domain.course.dto.CurrentCourseResponse;
+import com.likelion.duckswell.domain.course.dto.RecommendedProductResponse;
 import com.likelion.duckswell.domain.course.dto.RecoverySummaryResponse;
+import com.likelion.duckswell.domain.course.entity.RoutineTypeCode;
 import com.likelion.duckswell.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -96,4 +98,17 @@ public interface CourseApi {
     )
     ResponseEntity<ApiResponse<RecoverySummaryResponse>> getRecoverySummary(
             @Parameter(description = "조회할 코스 id") Long courseId);
+
+    @Operation(
+            summary = "루틴 타입 기준 추천 제품 조회",
+            description = """
+                    아직 오늘의 루틴(routineId)이 생성되지 않은 시점(데일리 루틴 타입을 방금
+                    선택한 직후 등)에, 그 루틴 타입의 고정 후보 성분 전체를 기준으로 추천 제품을
+                    조회합니다. 스텝별 카테고리 제한 없이 성분당 제품 하나씩 반환합니다.
+
+                    routineTypeCode: COOLDOWN(쿨다운) | CLEAR_UP(클리어업) | SEBUM_CONTROL(피지컨트롤) | HYDRATION(수분충전)
+                    """
+    )
+    ResponseEntity<ApiResponse<List<RecommendedProductResponse>>> getRecommendedProductsByRoutineType(
+            @Parameter(description = "루틴 타입 코드") RoutineTypeCode routineTypeCode);
 }
