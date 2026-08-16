@@ -102,7 +102,7 @@
 ---
 
 ## 🧩 서버 아키텍처
-추가 예정
+<img width="1775" height="1154" alt="Frame 3 (2)" src="https://github.com/user-attachments/assets/90f9c4ec-ece5-49d4-852c-1ccf0c154604" />
 
 ---
 
