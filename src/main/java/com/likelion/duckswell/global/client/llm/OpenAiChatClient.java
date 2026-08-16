@@ -111,7 +111,9 @@ public class OpenAiChatClient {
                 log.error("OpenAI 호출 실패: status={}, body={}", httpResponse.statusCode(), responseBody);
                 throw new CustomException(errorCode);
             }
-            log.info("OpenAI API 호출 성공 (누적 {}번째)", callSuccessCount.incrementAndGet());
+            if (httpResponse.statusCode() >= 200 && httpResponse.statusCode() < 300) {
+                log.info("OpenAI API 호출 성공 (누적 {}번째)", callSuccessCount.incrementAndGet());
+            }
             return responseBody;
         } catch (IOException | InterruptedException e) {
             log.error("OpenAI 호출 실패", e);
