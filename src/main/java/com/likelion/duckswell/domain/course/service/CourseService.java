@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -226,7 +227,7 @@ public class CourseService {
     }
 
     /**
-     * (성분, 카테고리) 조합마다 상점 제품을 1개씩 뽑는다(개수 상한 없음, 같은 조합 중복 제거).
+     * (성분, 카테고리) 조합마다 상점 제품을 랜덤으로 1개씩 뽑는다(개수 상한 없음, 같은 조합 중복 제거).
      * 해당 조합에 제품이 하나도 없으면 결과에서 그냥 빠진다.
      */
     public List<RecommendedProductResponse> pickRecommendedProducts(List<ProductPickCandidate> candidates) {
@@ -243,7 +244,8 @@ public class CourseService {
             String ingredientName = ingredientRepository.findById(candidate.ingredientId())
                     .map(Ingredient::getName)
                     .orElse("성분");
-            picked.add(new RecommendedProductResponse(ingredientName, products.get(0)));
+            ProductResponse randomProduct = products.get(ThreadLocalRandom.current().nextInt(products.size()));
+            picked.add(new RecommendedProductResponse(ingredientName, randomProduct));
         }
         return picked;
     }
