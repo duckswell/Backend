@@ -139,7 +139,7 @@ public class LlmChecklistClient {
     }
 
     private String formatSymptoms(List<Symptom> symptoms) {
-        if (symptoms == null || symptoms.isEmpty()) {
+        if (symptoms == null || symptoms.isEmpty() || symptoms.contains(Symptom.NONE)) {
             return "없음";
         }
         return String.join(", ", symptoms.stream().map(Symptom::name).toList());
