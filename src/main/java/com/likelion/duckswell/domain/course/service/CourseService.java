@@ -209,6 +209,7 @@ public class CourseService {
                 courseId, LocalDate.now().minusDays(SYMPTOM_LOOKBACK_DAYS));
 
         List<CourseSymptomSummaryResponse.SymptomFrequency> topSymptoms = symptoms.stream()
+                .filter(symptom -> symptom != Symptom.NONE)
                 .collect(Collectors.groupingBy(symptom -> symptom, Collectors.counting()))
                 .entrySet().stream()
                 .sorted(Map.Entry.<Symptom, Long>comparingByValue().reversed()

@@ -8,5 +8,6 @@ public enum Symptom {
     FLAKING,
     OILINESS,
     ITCHINESS,
-    SWELLING
+    SWELLING,
+    NONE
 }

@@ -122,7 +122,7 @@ public class LlmRoutineStepsClient {
     }
 
     private String formatSymptoms(List<Symptom> symptoms) {
-        if (symptoms == null || symptoms.isEmpty()) {
+        if (symptoms == null || symptoms.isEmpty() || symptoms.contains(Symptom.NONE)) {
             return "없음";
         }
         StringJoiner joiner = new StringJoiner(", ");
