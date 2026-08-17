@@ -38,6 +38,8 @@ public interface DiagnosisApi {
                     - courseId (필수): 진단을 기록할 코스 id. 진행 중인 코스여야 합니다. 데일리든, 집중이든 시작해야 해당 API 사용 가능.
                     - symptoms (필수): 오늘 선택한 증상 다중선택. null이거나 빈 배열([])이면 안 되고,
                       최소 1개는 선택해야 합니다. 특별한 증상이 없으면 NONE(해당없음)을 선택하세요.
+                      NONE은 다른 증상과 함께 선택할 수 없습니다(NONE 단독으로만 허용, 그 외
+                      조합은 400 에러).
                       REDNESS(붉은기) | HEAT(열감) | STINGING(따가움) | DRYNESS(건조함) |
                       FLAKING(각질) | OILINESS(번들거림) | ITCHINESS(가려움) | SWELLING(붓기) |
                       NONE(해당없음)

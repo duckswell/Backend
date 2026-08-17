@@ -40,6 +40,10 @@ public class RoutineService {
     /** 하루에 여러 번 기록될 수 있다 - 항상 새 row로 남긴다(수정/덮어쓰기 아님). */
     @Transactional
     public RoutineSnapshot createTodayRoutine(Long courseId, String photoUrl, String symptomNote, List<Symptom> symptoms) {
+        if (symptoms.contains(Symptom.NONE) && symptoms.size() > 1) {
+            throw new CustomException(RoutineErrorCode.SYMPTOM_NONE_MUST_BE_EXCLUSIVE);
+        }
+
         Routine routine = new Routine(courseId, LocalDate.now(), photoUrl, symptomNote);
         symptoms.forEach(routine::addSymptom);
         return RoutineSnapshot.from(routineRepository.save(routine));

@@ -72,7 +72,7 @@ public class LlmRecoveryStageClient {
 
         sb.append("[어제 관리 기록] 있음\n");
         sb.append("[어제 기록된 증상] ")
-                .append(context.yesterdaySymptoms().isEmpty()
+                .append(context.yesterdaySymptoms().isEmpty() || context.yesterdaySymptoms().contains(Symptom.NONE)
                         ? "없음"
                         : context.yesterdaySymptoms().stream().map(Symptom::name).collect(Collectors.joining(", ")))
                 .append('\n');
