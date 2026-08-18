@@ -12,6 +12,7 @@ import com.likelion.duckswell.domain.procedure.exception.ProcedureErrorCode;
 import com.likelion.duckswell.domain.procedure.repository.ProcedureRepository;
 import com.likelion.duckswell.global.exception.CustomException;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,12 +38,22 @@ public class ProcedureService {
                 .toList();
     }
 
-    /** GET /api/procedures/current용 - FOCUS 코스가 아니거나 진행 중인 코스가 아예 없으면 빈 목록을 반환한다. */
+    /**
+     * GET /api/procedures/current용 - 진행 중인 코스가 아예 없으면 빈 목록을 반환한다. FOCUS 코스면
+     * 그 코스에 귀속된 시술 전체를, DAILY 코스면 코스에 귀속된 시술이 없으므로 회원이 등록한 시술 중
+     * 가장 최근 것 1개를 대신 반환한다.
+     */
     public List<ProcedureResponse> getCurrentCourseProcedures() {
-        return courseService.getCurrentCourse()
-                .filter(course -> course.courseType() == CourseType.FOCUS)
-                .map(course -> getProceduresForCourse(course.courseId()))
-                .orElse(List.of());
+        Optional<CurrentCourseResponse> currentCourse = courseService.getCurrentCourse();
+        if (currentCourse.isEmpty()) {
+            return List.of();
+        }
+
+        CurrentCourseResponse course = currentCourse.get();
+        if (course.courseType() == CourseType.FOCUS) {
+            return getProceduresForCourse(course.courseId());
+        }
+        return getMyProcedures().stream().limit(1).toList();
     }
 
     public ProcedureResponse getProcedure(Long procedureId) {

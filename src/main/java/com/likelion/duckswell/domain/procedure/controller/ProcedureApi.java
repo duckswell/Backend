@@ -25,8 +25,10 @@ public interface ProcedureApi {
     @Operation(
             summary = "현재 코스 시술 정보 조회",
             description = """
-                    지금 진행 중인 집중 코스에 등록된 시술 정보만 조회합니다 (전체 이력이 아님).
-                    진행 중인 코스가 없거나 데일리 코스면 빈 목록을 반환합니다.
+                    진행 중인 코스 종류에 따라 다르게 조회합니다. 집중 코스면 그 코스에
+                    등록된 시술 정보 전체를(전체 이력이 아님), 데일리 코스면 코스에 귀속된
+                    시술이 없으므로 회원이 등록한 시술 중 가장 최근 것 1건을 반환합니다.
+                    진행 중인 코스가 아예 없으면 빈 목록을 반환합니다.
                     """
     )
     ResponseEntity<ApiResponse<List<ProcedureResponse>>> getCurrentCourseProcedures();
