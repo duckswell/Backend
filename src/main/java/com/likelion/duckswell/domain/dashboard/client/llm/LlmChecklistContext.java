@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * FOCUS는 procedures/recentRoutines를, DAILY는 routineTypeLabel(수분 보충 케어 등)/weather/
+ * FOCUS는 procedures/recentRoutines를, DAILY는 routineTypeLabel(수분충전 등)/weather/
  * recentRoutines를 근거로 사용한다. today는 procedureDate로부터 회복 경과일을 계산하는 기준.
  */
 public record LlmChecklistContext(
