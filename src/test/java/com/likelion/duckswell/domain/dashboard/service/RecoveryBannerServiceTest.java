@@ -1,9 +1,8 @@
 package com.likelion.duckswell.domain.dashboard.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.likelion.duckswell.domain.course.dto.CurrentCourseResponse;
@@ -64,13 +63,13 @@ class RecoveryBannerServiceTest {
     }
 
     @Test
-    void 오늘과_어제_기록이_모두_있으면_변화량을_계산한다() {
+    void 오늘_새_기록이_생기면_그_기록이_현재값_기존_현재값이_직전값이_된다() {
         // given
         givenFocusCourse(LocalDate.now().minusDays(3));
-        when(diagnosisService.getScores(anyLong(), eq(LocalDate.now())))
-                .thenReturn(Optional.of(new DiagnosisScoreSnapshot(20, 30, 10)));
-        when(diagnosisService.getScores(anyLong(), eq(LocalDate.now().minusDays(1))))
-                .thenReturn(Optional.of(new DiagnosisScoreSnapshot(25, 35, 15)));
+        when(diagnosisService.getRecentScores(anyInt())).thenReturn(List.of(
+                new DiagnosisScoreSnapshot(20, 30, 10),
+                new DiagnosisScoreSnapshot(25, 35, 15)
+        ));
 
         // when
         RecoveryBannerResponse banner = recoveryBannerService.getBanner().orElseThrow();
@@ -86,13 +85,11 @@ class RecoveryBannerServiceTest {
     }
 
     @Test
-    void 어제_기록이_없으면_이전값과_변화량은_0이다() {
+    void 유효한_기록이_1개뿐이면_이전값과_변화량은_0이다() {
         // given
         givenFocusCourse(LocalDate.now());
-        when(diagnosisService.getScores(anyLong(), eq(LocalDate.now())))
-                .thenReturn(Optional.of(new DiagnosisScoreSnapshot(20, 30, 10)));
-        when(diagnosisService.getScores(anyLong(), eq(LocalDate.now().minusDays(1))))
-                .thenReturn(Optional.empty());
+        when(diagnosisService.getRecentScores(anyInt()))
+                .thenReturn(List.of(new DiagnosisScoreSnapshot(20, 30, 10)));
 
         // when
         RecoveryBannerResponse banner = recoveryBannerService.getBanner().orElseThrow();
@@ -106,13 +103,31 @@ class RecoveryBannerServiceTest {
     }
 
     @Test
-    void 오늘_기록이_없으면_현재값은_0이다() {
+    void 새_기록이_없으면_기존_기록들끼리_그대로_비교된다() {
+        // given - "오늘" 기록이 없어도 getRecentScores가 돌려주는 최근 두 기록(예: 어제/그제)을
+        // 그대로 current/previous로 쓰는지 검증한다. 오늘 날짜에 억지로 0을 끼워넣지 않는다.
+        givenFocusCourse(LocalDate.now().minusDays(3));
+        when(diagnosisService.getRecentScores(anyInt())).thenReturn(List.of(
+                new DiagnosisScoreSnapshot(30, 40, 20),
+                new DiagnosisScoreSnapshot(25, 35, 15)
+        ));
+
+        // when
+        RecoveryBannerResponse banner = recoveryBannerService.getBanner().orElseThrow();
+
+        // then
+        assertThat(banner.redness()).satisfies(card -> {
+            assertThat(card.current()).isEqualTo(30);
+            assertThat(card.previous()).isEqualTo(25);
+            assertThat(card.delta()).isEqualTo(5);
+        });
+    }
+
+    @Test
+    void 유효한_기록이_하나도_없으면_모두_0이다() {
         // given
         givenFocusCourse(LocalDate.now().minusDays(3));
-        when(diagnosisService.getScores(anyLong(), eq(LocalDate.now())))
-                .thenReturn(Optional.empty());
-        when(diagnosisService.getScores(anyLong(), eq(LocalDate.now().minusDays(1))))
-                .thenReturn(Optional.of(new DiagnosisScoreSnapshot(25, 35, 15)));
+        when(diagnosisService.getRecentScores(anyInt())).thenReturn(List.of());
 
         // when
         RecoveryBannerResponse banner = recoveryBannerService.getBanner().orElseThrow();
@@ -120,8 +135,8 @@ class RecoveryBannerServiceTest {
         // then
         assertThat(banner.redness()).satisfies(card -> {
             assertThat(card.current()).isEqualTo(0);
-            assertThat(card.previous()).isEqualTo(25);
-            assertThat(card.delta()).isEqualTo(-25);
+            assertThat(card.previous()).isEqualTo(0);
+            assertThat(card.delta()).isEqualTo(0);
         });
     }
 
@@ -189,7 +204,7 @@ class RecoveryBannerServiceTest {
     }
 
     private void givenNoDiagnosisRecords() {
-        when(diagnosisService.getScores(anyLong(), any())).thenReturn(Optional.empty());
+        when(diagnosisService.getRecentScores(anyInt())).thenReturn(List.of());
     }
 
     private CurrentCourseResponse currentCourse(CourseType courseType, LocalDate startedAt) {

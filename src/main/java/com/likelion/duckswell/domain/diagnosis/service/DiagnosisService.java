@@ -257,6 +257,31 @@ public class DiagnosisService {
         return Optional.of(new DiagnosisScoreSnapshot(found.getRednessScore(), found.getTextureScore(), found.getBlemishScore()));
     }
 
+    /**
+     * 점수가 모두 채워진 진단 기록을 최신순으로 최대 count건 조회한다. 특정 코스로 범위를 좁히지
+     * 않고 회원의 코스 전체(진행 중 + 종료된 코스 모두)를 한 흐름으로 이어서 보므로, 새 코스가
+     * 시작돼도 직전 코스의 마지막 기록이 그대로 "직전 기록"으로 이어진다. 오늘 날짜에 얽매이지
+     * 않고 실제로 존재하는 가장 최근 기록들을 순서대로 반환하므로, 새 기록이 생기면 그 기록이
+     * 맨 앞으로 오고, 새 기록이 없으면 있던 기록끼리 그대로 순서가 밀려 올라간다(집중 코스 홈
+     * 배너의 "현재/직전 기록" 비교에 사용 - index 0이 현재, 1이 직전).
+     */
+    public List<DiagnosisScoreSnapshot> getRecentScores(int count) {
+        List<Long> courseIds = courseService.getCourseHistory().stream().map(CourseResponse::id).toList();
+        if (courseIds.isEmpty()) {
+            return List.of();
+        }
+
+        return routineService.findRoutineSnapshotsDesc(courseIds).stream()
+                .map(routine -> diagnosisRepository.findByRoutineId(routine.id()))
+                .flatMap(Optional::stream)
+                .filter(diagnosis -> diagnosis.getRednessScore() != null
+                        && diagnosis.getTextureScore() != null
+                        && diagnosis.getBlemishScore() != null)
+                .limit(count)
+                .map(diagnosis -> new DiagnosisScoreSnapshot(diagnosis.getRednessScore(), diagnosis.getTextureScore(), diagnosis.getBlemishScore()))
+                .toList();
+    }
+
     private DiagnosisErrorCode mapQualityReason(String reason) {
         if (reason == null) {
             return DiagnosisErrorCode.PHOTO_ANALYSIS_FAILED;

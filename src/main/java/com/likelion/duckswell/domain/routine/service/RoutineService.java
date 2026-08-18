@@ -59,6 +59,16 @@ public class RoutineService {
         return RoutineSnapshot.from(getRoutineOrThrow(routineId));
     }
 
+    /**
+     * 주어진 코스들(보통 한 회원의 코스 전체)의 루틴 기록을 코스 경계 없이 하나로 합쳐 최신순
+     * (같은 날짜면 생성 순서까지)으로 반환한다 - 회복 배너의 "직전 기록" 비교용.
+     */
+    public List<RoutineSnapshot> findRoutineSnapshotsDesc(List<Long> courseIds) {
+        return routineRepository.findByCourseIdInOrderByRoutineDateDescIdDesc(courseIds).stream()
+                .map(RoutineSnapshot::from)
+                .toList();
+    }
+
     /** 날짜 내림차순 상위 N개 - AI 체크리스트 생성 시 최근 컨디션 참고용 컨텍스트로 쓰인다. */
     public List<RoutineSnapshot> getRecentRoutineSnapshots(Long courseId, int limit) {
         return routineRepository.findByCourseIdOrderByRoutineDateDesc(courseId).stream()

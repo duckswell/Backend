@@ -13,14 +13,17 @@ import com.likelion.duckswell.domain.procedure.service.ProcedureService;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * 집중 코스 진행 중일 때만 노출되는 홈 화면 회복 배너. 붉은기/요철/잡티는 오늘·어제 진단 점수의
- * 단순 차이(산술)라 AI를 쓰지 않고, 종합 문구도 시술 경과일수만으로 결정되는 소수의 경우의 수라
+ * 집중 코스 진행 중일 때만 노출되는 홈 화면 회복 배너. 붉은기/요철/잡티는 "오늘"이라는 날짜나
+ * 지금 코스로 범위를 좁히지 않고, 회원의 코스 전체를 통틀어 실제로 존재하는 가장 최근 진단
+ * 기록 2개(현재/직전)의 단순 차이(산술)라 AI를 쓰지 않고, 종합 문구도 시술 경과일수만으로
+ * 결정되는 소수의 경우의 수라
  * 날씨 배너와 동일하게 규칙 기반으로 처리한다.
  */
 @Service
@@ -38,29 +41,32 @@ public class RecoveryBannerService {
         }
         CurrentCourseResponse course = currentCourse.get();
 
-        LocalDate today = LocalDate.now();
-        Optional<DiagnosisScoreSnapshot> todayScores = diagnosisService.getScores(course.courseId(), today);
-        Optional<DiagnosisScoreSnapshot> yesterdayScores = diagnosisService.getScores(course.courseId(), today.minusDays(1));
+        List<DiagnosisScoreSnapshot> recentScores = diagnosisService.getRecentScores(2);
+        Optional<DiagnosisScoreSnapshot> currentScores = recentScores.size() > 0 ? Optional.of(recentScores.get(0)) : Optional.empty();
+        Optional<DiagnosisScoreSnapshot> previousScores = recentScores.size() > 1 ? Optional.of(recentScores.get(1)) : Optional.empty();
 
         return Optional.of(new RecoveryBannerResponse(
-                buildCard(todayScores, yesterdayScores, DiagnosisScoreSnapshot::rednessScore),
-                buildCard(todayScores, yesterdayScores, DiagnosisScoreSnapshot::textureScore),
-                buildCard(todayScores, yesterdayScores, DiagnosisScoreSnapshot::blemishScore),
+                buildCard(currentScores, previousScores, DiagnosisScoreSnapshot::rednessScore),
+                buildCard(currentScores, previousScores, DiagnosisScoreSnapshot::textureScore),
+                buildCard(currentScores, previousScores, DiagnosisScoreSnapshot::blemishScore),
                 resolveSummaryMessage(course)
         ));
     }
 
-    /** 이전 기록(어제)이 없으면(집중 코스 첫날 등) previous=0, delta=0으로 고정한다. */
+    /**
+     * 현재값은 "오늘"이 아니라 실제로 존재하는 가장 최근 유효 기록이다 - 그런 기록이 아예
+     * 없으면 0. 직전 기록이 없으면(집중 코스 첫 기록 등) previous=0, delta=0으로 고정한다.
+     */
     private SkinScoreCard buildCard(
-            Optional<DiagnosisScoreSnapshot> todayScores,
-            Optional<DiagnosisScoreSnapshot> yesterdayScores,
+            Optional<DiagnosisScoreSnapshot> currentScores,
+            Optional<DiagnosisScoreSnapshot> previousScores,
             Function<DiagnosisScoreSnapshot, Integer> scoreExtractor
     ) {
-        int current = todayScores.map(scoreExtractor).orElse(0);
-        if (yesterdayScores.isEmpty()) {
+        int current = currentScores.map(scoreExtractor).orElse(0);
+        if (previousScores.isEmpty()) {
             return new SkinScoreCard(current, 0, 0);
         }
-        int previous = scoreExtractor.apply(yesterdayScores.get());
+        int previous = scoreExtractor.apply(previousScores.get());
         return new SkinScoreCard(current, previous, current - previous);
     }
 
