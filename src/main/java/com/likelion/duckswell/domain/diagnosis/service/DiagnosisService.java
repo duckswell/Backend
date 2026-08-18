@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -258,12 +259,13 @@ public class DiagnosisService {
     }
 
     /**
-     * 점수가 모두 채워진 진단 기록을 최신순으로 최대 count건 조회한다. 특정 코스로 범위를 좁히지
-     * 않고 회원의 코스 전체(진행 중 + 종료된 코스 모두)를 한 흐름으로 이어서 보므로, 새 코스가
-     * 시작돼도 직전 코스의 마지막 기록이 그대로 "직전 기록"으로 이어진다. 오늘 날짜에 얽매이지
-     * 않고 실제로 존재하는 가장 최근 기록들을 순서대로 반환하므로, 새 기록이 생기면 그 기록이
-     * 맨 앞으로 오고, 새 기록이 없으면 있던 기록끼리 그대로 순서가 밀려 올라간다(집중 코스 홈
-     * 배너의 "현재/직전 기록" 비교에 사용 - index 0이 현재, 1이 직전).
+     * 점수가 모두 채워진 진단 기록을 최신순으로 최대 count건 DB에서 직접 제한 조회한다(전체 이력을
+     * 메모리에 올려 애플리케이션에서 필터링하지 않음). 특정 코스로 범위를 좁히지 않고 회원의 코스
+     * 전체(진행 중 + 종료된 코스 모두)를 한 흐름으로 이어서 보므로, 새 코스가 시작돼도 직전 코스의
+     * 마지막 기록이 그대로 "직전 기록"으로 이어진다. 오늘 날짜에 얽매이지 않고 실제로 존재하는
+     * 가장 최근 기록들을 순서대로 반환하므로, 새 기록이 생기면 그 기록이 맨 앞으로 오고, 새 기록이
+     * 없으면 있던 기록끼리 그대로 순서가 밀려 올라간다(집중 코스 홈 배너의 "현재/직전 기록" 비교에
+     * 사용 - index 0이 현재, 1이 직전).
      */
     public List<DiagnosisScoreSnapshot> getRecentScores(int count) {
         List<Long> courseIds = courseService.getCourseHistory().stream().map(CourseResponse::id).toList();
@@ -271,15 +273,7 @@ public class DiagnosisService {
             return List.of();
         }
 
-        return routineService.findRoutineSnapshotsDesc(courseIds).stream()
-                .map(routine -> diagnosisRepository.findByRoutineId(routine.id()))
-                .flatMap(Optional::stream)
-                .filter(diagnosis -> diagnosis.getRednessScore() != null
-                        && diagnosis.getTextureScore() != null
-                        && diagnosis.getBlemishScore() != null)
-                .limit(count)
-                .map(diagnosis -> new DiagnosisScoreSnapshot(diagnosis.getRednessScore(), diagnosis.getTextureScore(), diagnosis.getBlemishScore()))
-                .toList();
+        return diagnosisRepository.findRecentValidScores(courseIds, PageRequest.of(0, count));
     }
 
     private DiagnosisErrorCode mapQualityReason(String reason) {
