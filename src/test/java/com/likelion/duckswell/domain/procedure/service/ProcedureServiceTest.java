@@ -86,7 +86,7 @@ class ProcedureServiceTest {
     void 데일리_코스_진행중이면_시술_등록시_예외가_발생한다() {
         // given
         when(courseService.getCurrentCourse())
-                .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.DAILY, "수분 보충 케어", LocalDate.now(), 0)));
+                .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.DAILY, "수분충전", LocalDate.now(), 0)));
 
         ProcedureRegisterRequest request = new ProcedureRegisterRequest(List.of(
                 new ProcedureItemRequest(ProcedureType.SCALING, LocalDate.now(), 1, 3, List.of(ProcedureAreaType.FULL_FACE))
@@ -119,7 +119,7 @@ class ProcedureServiceTest {
     void 데일리_코스_진행중이고_등록된_시술이_있으면_가장_최근_시술_1개를_반환한다() {
         // given
         when(courseService.getCurrentCourse())
-                .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.DAILY, "수분 보충 케어", LocalDate.now(), 0)));
+                .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.DAILY, "수분충전", LocalDate.now(), 0)));
 
         Procedure recentProcedure = new Procedure(1L, 2L, ProcedureType.SCALING, LocalDate.now(), 1, 3);
         Procedure olderProcedure = new Procedure(1L, 2L, ProcedureType.SCALING, LocalDate.now().minusDays(10), 1, 3);
@@ -139,7 +139,7 @@ class ProcedureServiceTest {
     void 데일리_코스_진행중이고_등록된_시술이_없으면_현재_코스_시술_조회시_빈_목록을_반환한다() {
         // given
         when(courseService.getCurrentCourse())
-                .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.DAILY, "수분 보충 케어", LocalDate.now(), 0)));
+                .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.DAILY, "수분충전", LocalDate.now(), 0)));
         when(procedureRepository.findByMemberIdOrderByProcedureDateDesc(anyLong()))
                 .thenReturn(List.of());
 

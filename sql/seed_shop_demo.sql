@@ -9,10 +9,10 @@
 
 -- 1) routine_type 코드 테이블 (course.routine_type_code FK 대상)
 INSERT INTO routine_type (code, name, description, icon_url) VALUES
-  ('COOLDOWN', '쿨다운 케어', '시술 직후 열감과 붓기를 가라앉히는 루틴', NULL),
-  ('CLEAR_UP', '트러블 케어', '트러블과 염증을 진정시키는 루틴', NULL),
-  ('SEBUM_CONTROL', '피지 조절 케어', '과다 피지 분비를 조절하는 루틴', NULL),
-  ('HYDRATION', '수분 보충 케어', '건조하고 당김이 있는 피부에 수분을 채우는 루틴', NULL);
+  ('COOLDOWN', '쿨다운', '시술 직후 열감과 붓기를 가라앉히는 루틴', NULL),
+  ('CLEAR_UP', '클리어업', '트러블과 염증을 진정시키는 루틴', NULL),
+  ('SEBUM_CONTROL', '피지컨트롤', '과다 피지 분비를 조절하는 루틴', NULL),
+  ('HYDRATION', '수분충전', '건조하고 당김이 있는 피부에 수분을 채우는 루틴', NULL);
 
 -- 2) ingredient (확정 8개: VITAMIN 2 / MOISTURE 4 / PLANT_EXTRACT 2)
 INSERT INTO ingredient (name, category, description, created_at, updated_at) VALUES

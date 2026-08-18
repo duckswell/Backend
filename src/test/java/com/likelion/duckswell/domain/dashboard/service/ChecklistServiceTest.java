@@ -80,7 +80,7 @@ class ChecklistServiceTest {
         ChecklistItem existing1 = new ChecklistItem(1L, 1L, LocalDate.now(), 0, "제목1", "설명1", ChecklistSourceType.WEATHER_ROUTINE);
         ChecklistItem existing2 = new ChecklistItem(1L, 1L, LocalDate.now(), 1, "제목2", "설명2", ChecklistSourceType.WEATHER_ROUTINE);
         when(courseService.getCurrentCourse())
-                .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.DAILY, "수분 보충 케어", LocalDate.now(), 0)));
+                .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.DAILY, "수분충전", LocalDate.now(), 0)));
         when(checklistItemRepository.findByMemberIdAndCourseIdAndItemDateOrderByItemOrderAsc(anyLong(), anyLong(), any()))
                 .thenReturn(List.of(existing1, existing2));
 
@@ -126,7 +126,7 @@ class ChecklistServiceTest {
         // given
         when(checklistItemRepository.findByMemberIdAndCourseIdAndItemDateOrderByItemOrderAsc(anyLong(), anyLong(), any())).thenReturn(List.of());
         when(courseService.getCurrentCourse())
-                .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.DAILY, "수분 보충 케어", LocalDate.now(), 0)));
+                .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.DAILY, "수분충전", LocalDate.now(), 0)));
         when(routineService.getRecentRoutineSnapshots(anyLong(), anyInt())).thenReturn(List.of());
         when(weatherService.getTodayForecast(null, null))
                 .thenReturn(new WeatherResponse(20.0, "Sunny", 20, 8.0, 10.0, 10.0, 1));
@@ -160,7 +160,7 @@ class ChecklistServiceTest {
                 .thenReturn(List.of())
                 .thenReturn(List.of(winnerItem1, winnerItem2));
         when(courseService.getCurrentCourse())
-                .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.DAILY, "수분 보충 케어", LocalDate.now(), 0)));
+                .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.DAILY, "수분충전", LocalDate.now(), 0)));
         when(routineService.getRecentRoutineSnapshots(anyLong(), anyInt())).thenReturn(List.of());
         when(weatherService.getTodayForecast(null, null))
                 .thenReturn(new WeatherResponse(20.0, "Sunny", 20, 8.0, 10.0, 10.0, 1));
