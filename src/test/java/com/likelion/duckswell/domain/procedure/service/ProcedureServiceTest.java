@@ -116,10 +116,32 @@ class ProcedureServiceTest {
     }
 
     @Test
-    void 데일리_코스_진행중이면_현재_코스_시술_조회시_빈_목록을_반환한다() {
+    void 데일리_코스_진행중이고_등록된_시술이_있으면_가장_최근_시술_1개를_반환한다() {
         // given
         when(courseService.getCurrentCourse())
                 .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.DAILY, "수분 보충 케어", LocalDate.now(), 0)));
+
+        Procedure recentProcedure = new Procedure(1L, 2L, ProcedureType.SCALING, LocalDate.now(), 1, 3);
+        Procedure olderProcedure = new Procedure(1L, 2L, ProcedureType.SCALING, LocalDate.now().minusDays(10), 1, 3);
+        when(procedureRepository.findByMemberIdOrderByProcedureDateDesc(anyLong()))
+                .thenReturn(List.of(recentProcedure, olderProcedure));
+
+        // when
+        List<ProcedureResponse> result = procedureService.getCurrentCourseProcedures();
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).procedureDate()).isEqualTo(recentProcedure.getProcedureDate());
+        verify(procedureRepository, never()).findByMemberIdAndCourseIdOrderByProcedureDateDesc(any(), any());
+    }
+
+    @Test
+    void 데일리_코스_진행중이고_등록된_시술이_없으면_현재_코스_시술_조회시_빈_목록을_반환한다() {
+        // given
+        when(courseService.getCurrentCourse())
+                .thenReturn(Optional.of(new CurrentCourseResponse(1L, CourseType.DAILY, "수분 보충 케어", LocalDate.now(), 0)));
+        when(procedureRepository.findByMemberIdOrderByProcedureDateDesc(anyLong()))
+                .thenReturn(List.of());
 
         // when
         List<ProcedureResponse> result = procedureService.getCurrentCourseProcedures();
