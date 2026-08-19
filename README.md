@@ -1,10 +1,10 @@
 <div align="center">
-  <strong>(대표 이미지 첨부 예정)</strong>
+  <strong><img width="1920" height="1080" alt="중커톤 표지" src="https://github.com/user-attachments/assets/f4627886-5d58-4ac4-a803-079f3d24fd37" /></strong>
 </div>
 
 ---
 
-## 🧴 [이름 예정] 프로젝트 개요
+## 🧴 HALE 프로젝트 개요
 
 ### 서비스 소개
 시술 후 피부 회복을 돕는 AI 스킨케어 코칭 앱
@@ -80,7 +80,14 @@
 </tr>
 <tr>
 <th align="center">AI</th>
-<td align="left">추가 예정</td>
+<td align="left">
+<img src="https://skillicons.dev/icons?i=opencv,sklearn" alt="OpenCV, scikit-learn">
+<br/>
+<img src="https://img.shields.io/badge/MediaPipe-0097A7?style=for-the-badge&logo=mediapipe&logoColor=white">
+<img src="https://img.shields.io/badge/pandas-150458?style=for-the-badge&logo=pandas&logoColor=white"><br>
+<img src="https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white">
+<img src="https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white">
+</td>
 </tr>
 <tr>
 <th align="center">Collaboration</th>
@@ -90,11 +97,16 @@
 </tr>
 <tr>
 <th align="center">CI/CD</th>
-<td align="left">추가 예정</td>
+<td align="left">
+<img src="https://skillicons.dev/icons?i=githubactions" alt="GitHub Actions">
+</td>
 </tr>
 <tr>
 <th align="center">Deployment</th>
-<td align="left">추가 예정</td>
+<td align="left">
+<img src="https://skillicons.dev/icons?i=docker,aws,nginx" alt="Docker, AWS(S3), nginx">
+<br/>
+<img src="https://img.shields.io/badge/Gabia-00998C?style=for-the-badge&logoColor=white">
 </tr>
 </table>
 </div>
