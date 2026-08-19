@@ -99,9 +99,9 @@
 <tr>
 <th align="center">Deployment</th>
 <td align="left">
-<img src="https://skillicons.dev/icons?i=docker,aws,nginx" alt="Docker, AWS(S3), nginx">
-<img height="40" alt="gabia" src="https://github.com/user-attachments/assets/a5cca70b-891f-489b-aa07-157c2dffe549" />
+<img src="https://skillicons.dev/icons?i=docker,nginx,aws" alt="Docker, nginx, AWS(S3)">
 <img height="50" alt="s3-Photoroom" src="https://github.com/user-attachments/assets/d115a3e4-8782-4660-b970-1022b86eaf89" />
+<img height="40" alt="gabia" src="https://github.com/user-attachments/assets/a5cca70b-891f-489b-aa07-157c2dffe549" />
 </tr>
 </table>
 </div>
