@@ -7,7 +7,7 @@
 ## 🧴 HALE 프로젝트 개요
 
 ### 서비스 소개
-시술 후 피부 회복을 돕는 AI 스킨케어 코칭 앱
+시술 정보와 매일의 피부 상태를 AI로 분석해, 시술 후 매일 달라지는 피부에 맞춘 오늘의 회복 루틴을 제공하는 서비스
 
 > **개발 기간**: 2026.07.26 ~ 2026.08.21
 
@@ -67,26 +67,19 @@
 </td>
 </tr>
 <tr>
-<th align="center">Database</th>
+<th align="center">Database/Docs</th>
 <td align="left">
 <img src="https://skillicons.dev/icons?i=mysql" alt="MySQL">
-</td>
-</tr>
-<tr>
-<th align="center">API Docs</th>
-<td align="left">
 <img height="40" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/swagger.png" title="Swagger">
 </td>
 </tr>
 <tr>
-<th align="center">AI</th>
+<th align="center">AI (duckswell/AI 레포)</th>
 <td align="left">
 <img src="https://skillicons.dev/icons?i=opencv,sklearn" alt="OpenCV, scikit-learn">
-<br/>
-<img src="https://img.shields.io/badge/MediaPipe-0097A7?style=for-the-badge&logo=mediapipe&logoColor=white">
-<img src="https://img.shields.io/badge/pandas-150458?style=for-the-badge&logo=pandas&logoColor=white"><br>
-<img src="https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white">
-<img src="https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white">
+<img height="40" alt="mediapipe-Photoroom" src="https://github.com/user-attachments/assets/32beba05-22f2-48be-baa1-d87abe84e1ac" />
+<img src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/pandas.png" alt="pandas" height="40"> 
+<img src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/numpy.png" alt="NumPy" height="40">
 </td>
 </tr>
 <tr>
@@ -96,17 +89,19 @@
 </td>
 </tr>
 <tr>
-<th align="center">CI/CD</th>
+<th align="center">CI/CD, External API</th>
 <td align="left">
 <img src="https://skillicons.dev/icons?i=githubactions" alt="GitHub Actions">
+<img height="40" alt="weather" src="https://github.com/user-attachments/assets/c864d529-7b78-4a67-8999-61248f374b7b" />
+<img height="40" alt="openai 1" src="https://github.com/user-attachments/assets/cf786f9f-860f-480b-a28e-bab97f7ad2fd" />
 </td>
 </tr>
 <tr>
 <th align="center">Deployment</th>
 <td align="left">
 <img src="https://skillicons.dev/icons?i=docker,aws,nginx" alt="Docker, AWS(S3), nginx">
-<br/>
-<img src="https://img.shields.io/badge/Gabia-00998C?style=for-the-badge&logoColor=white">
+<img height="40" alt="gabia" src="https://github.com/user-attachments/assets/a5cca70b-891f-489b-aa07-157c2dffe549" />
+<img height="50" alt="s3-Photoroom" src="https://github.com/user-attachments/assets/d115a3e4-8782-4660-b970-1022b86eaf89" />
 </tr>
 </table>
 </div>
