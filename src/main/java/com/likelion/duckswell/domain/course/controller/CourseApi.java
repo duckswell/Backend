@@ -6,6 +6,7 @@ import com.likelion.duckswell.domain.course.dto.CourseSymptomSummaryResponse;
 import com.likelion.duckswell.domain.course.dto.CurrentCourseResponse;
 import com.likelion.duckswell.domain.course.dto.RecommendedProductResponse;
 import com.likelion.duckswell.domain.course.dto.RecoverySummaryResponse;
+import com.likelion.duckswell.domain.course.dto.RoutineTypeIngredientResponse;
 import com.likelion.duckswell.domain.course.entity.RoutineTypeCode;
 import com.likelion.duckswell.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -110,5 +111,19 @@ public interface CourseApi {
                     """
     )
     ResponseEntity<ApiResponse<List<RecommendedProductResponse>>> getRecommendedProductsByRoutineType(
+            @Parameter(description = "루틴 타입 코드") RoutineTypeCode routineTypeCode);
+
+    @Operation(
+            summary = "루틴 타입별 성분 목록 조회",
+            description = """
+                    해당 루틴 타입에 고정 매핑된 성분 후보 전체를 ingredientId와 함께 반환합니다.
+                    아직 오늘의 루틴(routineId)이 없는 시점(데일리 루틴 타입을 방금 선택한 직후 등)에도
+                    조회 가능하며, 더보기 화면에서 성분 카드를 나열하고 카드 클릭 시 그 ingredientId로
+                    성분별 제품 목록 API를 호출하는 데 사용됩니다.
+
+                    routineTypeCode: COOLDOWN(쿨다운) | CLEAR_UP(클리어업) | SEBUM_CONTROL(피지컨트롤) | HYDRATION(수분충전)
+                    """
+    )
+    ResponseEntity<ApiResponse<List<RoutineTypeIngredientResponse>>> getIngredientsByRoutineType(
             @Parameter(description = "루틴 타입 코드") RoutineTypeCode routineTypeCode);
 }
