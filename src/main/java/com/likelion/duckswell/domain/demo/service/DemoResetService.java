@@ -12,6 +12,7 @@ import com.likelion.duckswell.domain.dashboard.repository.ChecklistItemRepositor
 import com.likelion.duckswell.domain.diagnosis.entity.Diagnosis;
 import com.likelion.duckswell.domain.diagnosis.repository.DiagnosisRepository;
 import com.likelion.duckswell.domain.member.entity.Member;
+import com.likelion.duckswell.domain.member.repository.MemberRepository;
 import com.likelion.duckswell.domain.procedure.entity.Procedure;
 import com.likelion.duckswell.domain.procedure.entity.ProcedureAreaType;
 import com.likelion.duckswell.domain.procedure.entity.ProcedureType;
@@ -56,8 +57,16 @@ public class DemoResetService {
     private final ChecklistItemRepository checklistItemRepository;
     private final RoutineTypeRepository routineTypeRepository;
     private final IngredientRepository ingredientRepository;
+    private final MemberRepository memberRepository;
 
+    /**
+     * 인증 없는 API라 동시에 여러 번 호출될 수 있다 - 회원 행에 비관적 락을 걸어 트랜잭션이
+     * 끝날 때까지 유지함으로써, 동시 요청이 clearMemberData()/seedDemoScenario()를 겹쳐
+     * 실행해 코스·루틴·체크리스트가 중복 생성되는 것을 막는다(뒤에 들어온 요청은 락이
+     * 풀릴 때까지 대기했다가 자기 차례에 다시 지우고 새로 시딩한다).
+     */
     public void reset() {
+        memberRepository.findWithLockById(Member.DEFAULT_ID).orElseThrow();
         clearMemberData();
         seedDemoScenario();
     }
