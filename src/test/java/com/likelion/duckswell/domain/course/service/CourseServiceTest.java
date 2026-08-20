@@ -2,12 +2,14 @@ package com.likelion.duckswell.domain.course.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import com.likelion.duckswell.domain.course.dto.CourseResponse;
 import com.likelion.duckswell.domain.course.dto.CourseStartRequest;
 import com.likelion.duckswell.domain.course.dto.CourseSymptomSummaryResponse;
 import com.likelion.duckswell.domain.course.dto.IngredientCandidateResponse;
 import com.likelion.duckswell.domain.course.dto.RecommendedProductResponse;
+import com.likelion.duckswell.domain.course.dto.RoutineTypeIngredientResponse;
 import com.likelion.duckswell.domain.course.entity.Course;
 import com.likelion.duckswell.domain.course.entity.CourseStatus;
 import com.likelion.duckswell.domain.course.entity.CourseType;
@@ -218,6 +220,23 @@ class CourseServiceTest {
 
         // then
         assertThat(candidates).extracting(IngredientCandidateResponse::ingredientId).contains(ingredient.getId());
+    }
+
+    @Test
+    void 루틴_타입별_성분_목록_조회시_ingredientId와_ingredientName이_함께_반환된다() {
+        // given
+        seedRoutineType(RoutineTypeCode.CLEAR_UP);
+        Ingredient ingredient = ingredientRepository.save(new Ingredient("나이아신아마이드", IngredientCategory.VITAMIN, "미백 성분"));
+        RoutineType clearUp = routineTypeRepository.findById(RoutineTypeCode.CLEAR_UP).orElseThrow();
+        routineTypeIngredientRepository.save(new RoutineTypeIngredient(clearUp, ingredient.getId()));
+        entityManager.flush();
+
+        // when
+        List<RoutineTypeIngredientResponse> response = courseService.getRoutineTypeIngredients(RoutineTypeCode.CLEAR_UP);
+
+        // then
+        assertThat(response).extracting(RoutineTypeIngredientResponse::ingredientId, RoutineTypeIngredientResponse::ingredientName)
+                .contains(tuple(ingredient.getId(), ingredient.getName()));
     }
 
     @Test

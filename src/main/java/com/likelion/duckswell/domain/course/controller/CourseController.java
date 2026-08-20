@@ -6,6 +6,7 @@ import com.likelion.duckswell.domain.course.dto.CourseSymptomSummaryResponse;
 import com.likelion.duckswell.domain.course.dto.CurrentCourseResponse;
 import com.likelion.duckswell.domain.course.dto.RecommendedProductResponse;
 import com.likelion.duckswell.domain.course.dto.RecoverySummaryResponse;
+import com.likelion.duckswell.domain.course.dto.RoutineTypeIngredientResponse;
 import com.likelion.duckswell.domain.course.entity.RoutineTypeCode;
 import com.likelion.duckswell.domain.course.service.CourseService;
 import com.likelion.duckswell.domain.diagnosis.service.DiagnosisService;
@@ -76,5 +77,12 @@ public class  CourseController implements CourseApi {
     public ResponseEntity<ApiResponse<List<RecommendedProductResponse>>> getRecommendedProductsByRoutineType(
             @PathVariable RoutineTypeCode routineTypeCode) {
         return ResponseEntity.ok(ApiResponse.success(courseService.getRecommendedProductsByRoutineType(routineTypeCode)));
+    }
+
+    @Override
+    @GetMapping("/routine-types/{routineTypeCode}/ingredients")
+    public ResponseEntity<ApiResponse<List<RoutineTypeIngredientResponse>>> getIngredientsByRoutineType(
+            @PathVariable RoutineTypeCode routineTypeCode) {
+        return ResponseEntity.ok(ApiResponse.success(courseService.getRoutineTypeIngredients(routineTypeCode)));
     }
 }

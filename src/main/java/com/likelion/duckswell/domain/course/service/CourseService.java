@@ -6,6 +6,7 @@ import com.likelion.duckswell.domain.course.dto.CourseSymptomSummaryResponse;
 import com.likelion.duckswell.domain.course.dto.CurrentCourseResponse;
 import com.likelion.duckswell.domain.course.dto.IngredientCandidateResponse;
 import com.likelion.duckswell.domain.course.dto.RecommendedProductResponse;
+import com.likelion.duckswell.domain.course.dto.RoutineTypeIngredientResponse;
 import com.likelion.duckswell.domain.course.entity.Course;
 import com.likelion.duckswell.domain.course.entity.CourseStatus;
 import com.likelion.duckswell.domain.course.entity.CourseType;
@@ -136,6 +137,17 @@ public class CourseService {
                 .map(ingredient -> new ProductPickCandidate(ingredient.getIngredientId(), null))
                 .toList();
         return pickRecommendedProducts(candidates);
+    }
+
+    /**
+     * 아직 오늘의 Routine이 없는 시점에도 그 루틴 타입에 고정 매핑된 성분 전체를 ingredientId와
+     * 함께 보여주기 위한 조회. 더보기에서 성분 카드를 나열하고, 카드 클릭 시 그 ingredientId로
+     * 제품 목록 API를 다시 호출하는 화면에 쓰인다.
+     */
+    public List<RoutineTypeIngredientResponse> getRoutineTypeIngredients(RoutineTypeCode routineTypeCode) {
+        return getIngredientCandidates(routineTypeCode).stream()
+                .map(candidate -> new RoutineTypeIngredientResponse(candidate.ingredientId(), candidate.name()))
+                .toList();
     }
 
     public Optional<CurrentCourseResponse> getCurrentCourse() {
