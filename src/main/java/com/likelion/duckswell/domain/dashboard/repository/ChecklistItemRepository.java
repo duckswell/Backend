@@ -11,4 +11,6 @@ public interface ChecklistItemRepository extends JpaRepository<ChecklistItem, Lo
     List<ChecklistItem> findByMemberIdAndCourseIdAndItemDateOrderByItemOrderAsc(Long memberId, Long courseId, LocalDate itemDate);
 
     Optional<ChecklistItem> findByIdAndMemberId(Long id, Long memberId);
+
+    void deleteByMemberId(Long memberId);
 }

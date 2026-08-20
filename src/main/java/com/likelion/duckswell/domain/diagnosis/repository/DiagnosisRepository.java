@@ -13,6 +13,8 @@ public interface DiagnosisRepository extends JpaRepository<Diagnosis, Long> {
 
     Optional<Diagnosis> findByRoutineId(Long routineId);
 
+    void deleteByRoutineIdIn(List<Long> routineIds);
+
     /**
      * courseIds에 속한 루틴 중 점수 3개가 모두 채워진 진단만 골라, 루틴 날짜(같으면 진단 기록
      * 자체의 id) 내림차순으로 DB에서 직접 pageable 크기만큼 제한 조회한다 - 전체 이력을 메모리에
