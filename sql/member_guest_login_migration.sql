@@ -10,12 +10,14 @@
 --
 -- 로그인 기능이 없던 프리런치 단계라 실사용자 데이터가 없다고 보지만, 기존 행이 있으면
 -- guest_token을 먼저 채워야 NOT NULL / UNIQUE 제약을 걸 수 있다.
+-- guest_token은 Authorization 헤더로 인증에 쓰이므로, 예측 가능한 UUID()(v1) 대신
+-- 암호학적 난수인 RANDOM_BYTES()로 채운다.
 
 ALTER TABLE member
     ADD COLUMN guest_token VARCHAR(36) NULL AFTER nickname;
 
 UPDATE member
-SET guest_token = UUID()
+SET guest_token = LOWER(HEX(RANDOM_BYTES(16)))
 WHERE guest_token IS NULL;
 
 ALTER TABLE member
