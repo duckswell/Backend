@@ -21,10 +21,13 @@ import com.likelion.duckswell.domain.procedure.entity.ProcedureAreaType;
 import com.likelion.duckswell.domain.procedure.entity.ProcedureType;
 import com.likelion.duckswell.domain.procedure.exception.ProcedureErrorCode;
 import com.likelion.duckswell.domain.procedure.repository.ProcedureRepository;
+import com.likelion.duckswell.domain.member.auth.CurrentMemberContext;
 import com.likelion.duckswell.global.exception.CustomException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -43,6 +46,16 @@ class ProcedureServiceTest {
 
     @InjectMocks
     private ProcedureService procedureService;
+
+    @BeforeEach
+    void setUpCurrentMember() {
+        CurrentMemberContext.set(1L);
+    }
+
+    @AfterEach
+    void clearCurrentMember() {
+        CurrentMemberContext.clear();
+    }
 
     @Test
     void 집중_코스_진행중이면_시술이_그_코스에_귀속되어_등록된다() {
