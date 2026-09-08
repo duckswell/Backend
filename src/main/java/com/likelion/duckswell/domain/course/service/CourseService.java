@@ -18,7 +18,7 @@ import com.likelion.duckswell.domain.course.repository.CourseRepository;
 import com.likelion.duckswell.domain.course.repository.RoutineTypeIngredientRepository;
 import com.likelion.duckswell.domain.course.repository.RoutineTypeRepository;
 import com.likelion.duckswell.domain.course.util.SymptomRoutineTypeMapper;
-import com.likelion.duckswell.domain.member.entity.Member;
+import com.likelion.duckswell.domain.member.auth.CurrentMemberContext;
 import com.likelion.duckswell.domain.product.dto.ProductResponse;
 import com.likelion.duckswell.domain.product.entity.Ingredient;
 import com.likelion.duckswell.domain.product.entity.IngredientTag;
@@ -66,14 +66,15 @@ public class CourseService {
 
     @Transactional
     public CourseResponse startCourse(CourseStartRequest request) {
-        courseRepository.findByMemberIdAndStatus(Member.DEFAULT_ID, CourseStatus.IN_PROGRESS)
+        Long memberId = CurrentMemberContext.getMemberId();
+        courseRepository.findByMemberIdAndStatus(memberId, CourseStatus.IN_PROGRESS)
                 .ifPresent(course -> {
                     throw new CustomException(CourseErrorCode.ACTIVE_COURSE_ALREADY_EXISTS);
                 });
 
         RoutineType routineType = resolveRoutineTypeForStart(request.courseType(), request.routineTypeCode());
 
-        Course course = new Course(Member.DEFAULT_ID, null, request.courseType(), routineType, LocalDate.now());
+        Course course = new Course(memberId, null, request.courseType(), routineType, LocalDate.now());
         return CourseResponse.from(courseRepository.save(course));
     }
 
@@ -89,15 +90,16 @@ public class CourseService {
 
     @Transactional
     public CourseResponse restartFocusCourse() {
-        Optional<Course> activeCourse = courseRepository.findByMemberIdAndStatus(Member.DEFAULT_ID, CourseStatus.IN_PROGRESS);
+        Long memberId = CurrentMemberContext.getMemberId();
+        Optional<Course> activeCourse = courseRepository.findByMemberIdAndStatus(memberId, CourseStatus.IN_PROGRESS);
         activeCourse.ifPresent(course -> course.end(LocalDate.now()));
 
-        Course newCourse = new Course(Member.DEFAULT_ID, null, CourseType.FOCUS, null, LocalDate.now());
+        Course newCourse = new Course(memberId, null, CourseType.FOCUS, null, LocalDate.now());
         return CourseResponse.from(courseRepository.save(newCourse));
     }
 
     public List<CourseResponse> getCourseHistory() {
-        return courseRepository.findByMemberIdOrderByStartedAtDescIdDesc(Member.DEFAULT_ID).stream()
+        return courseRepository.findByMemberIdOrderByStartedAtDescIdDesc(CurrentMemberContext.getMemberId()).stream()
                 .map(CourseResponse::from)
                 .toList();
     }
@@ -151,7 +153,7 @@ public class CourseService {
     }
 
     public Optional<CurrentCourseResponse> getCurrentCourse() {
-        return courseRepository.findByMemberIdAndStatus(Member.DEFAULT_ID, CourseStatus.IN_PROGRESS)
+        return courseRepository.findByMemberIdAndStatus(CurrentMemberContext.getMemberId(), CourseStatus.IN_PROGRESS)
                 .map(course -> CurrentCourseResponse.of(course, calculateStreakDays(course.getId(), null)));
     }
 
