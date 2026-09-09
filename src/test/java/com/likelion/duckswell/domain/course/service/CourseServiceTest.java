@@ -20,7 +20,9 @@ import com.likelion.duckswell.domain.course.exception.CourseErrorCode;
 import com.likelion.duckswell.domain.course.repository.CourseRepository;
 import com.likelion.duckswell.domain.course.repository.RoutineTypeIngredientRepository;
 import com.likelion.duckswell.domain.course.repository.RoutineTypeRepository;
+import com.likelion.duckswell.domain.member.auth.CurrentMemberContext;
 import com.likelion.duckswell.domain.member.entity.Member;
+import com.likelion.duckswell.domain.member.repository.MemberRepository;
 import com.likelion.duckswell.domain.product.entity.Ingredient;
 import com.likelion.duckswell.domain.product.entity.IngredientCategory;
 import com.likelion.duckswell.domain.product.entity.Product;
@@ -34,6 +36,8 @@ import com.likelion.duckswell.domain.routine.repository.RoutineRepository;
 import com.likelion.duckswell.global.exception.CustomException;
 import java.time.LocalDate;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -68,7 +72,23 @@ class CourseServiceTest {
     private RoutineRepository routineRepository;
 
     @Autowired
+    private MemberRepository memberRepository;
+
+    @Autowired
     private TestEntityManager entityManager;
+
+    private Long memberId;
+
+    @BeforeEach
+    void setUpCurrentMember() {
+        memberId = memberRepository.save(Member.createGuest("course-service-test")).getId();
+        CurrentMemberContext.set(memberId);
+    }
+
+    @AfterEach
+    void clearCurrentMember() {
+        CurrentMemberContext.clear();
+    }
 
     @Test
     void 집중_코스를_시작하면_루틴타입_없이_진행중_상태로_생성된다() {
@@ -256,7 +276,7 @@ class CourseServiceTest {
     void 최근_7일_증상만_집계되고_그_이전_증상은_제외된다() {
         // given
         endAnyActiveCourse();
-        Course course = courseRepository.save(new Course(Member.DEFAULT_ID, null, CourseType.FOCUS, null, LocalDate.now()));
+        Course course = courseRepository.save(new Course(memberId, null, CourseType.FOCUS, null, LocalDate.now()));
 
         Routine withinWindow = new Routine(course.getId(), LocalDate.now(), null, null);
         withinWindow.addSymptom(Symptom.DRYNESS);
@@ -287,7 +307,7 @@ class CourseServiceTest {
     void 교집합이_없는_두_증상이_top2면_클리어업이_기본값으로_추천된다() {
         // given
         endAnyActiveCourse();
-        Course course = courseRepository.save(new Course(Member.DEFAULT_ID, null, CourseType.FOCUS, null, LocalDate.now()));
+        Course course = courseRepository.save(new Course(memberId, null, CourseType.FOCUS, null, LocalDate.now()));
 
         // DRYNESS -> {HYDRATION}, OILINESS -> {SEBUM_CONTROL}: 교집합 없음 -> 기본값 CLEAR_UP
         Routine routine = new Routine(course.getId(), LocalDate.now(), null, null);
@@ -357,7 +377,7 @@ class CourseServiceTest {
 
     /** 시드 데이터 등으로 이미 진행 중인 코스가 있으면 종료해서, 각 테스트가 "진행 중인 코스 없음" 상태에서 시작하도록 만든다. */
     private void endAnyActiveCourse() {
-        courseRepository.findByMemberIdAndStatus(Member.DEFAULT_ID, CourseStatus.IN_PROGRESS)
+        courseRepository.findByMemberIdAndStatus(memberId, CourseStatus.IN_PROGRESS)
                 .ifPresent(course -> course.end(LocalDate.now()));
         entityManager.flush();
     }

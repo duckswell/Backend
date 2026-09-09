@@ -21,6 +21,7 @@ import com.likelion.duckswell.domain.dashboard.entity.ChecklistItem;
 import com.likelion.duckswell.domain.dashboard.entity.ChecklistSourceType;
 import com.likelion.duckswell.domain.dashboard.exception.DashboardErrorCode;
 import com.likelion.duckswell.domain.dashboard.repository.ChecklistItemRepository;
+import com.likelion.duckswell.domain.member.auth.CurrentMemberContext;
 import com.likelion.duckswell.domain.procedure.service.ProcedureService;
 import com.likelion.duckswell.domain.routine.service.RoutineService;
 import com.likelion.duckswell.domain.weather.dto.WeatherResponse;
@@ -29,6 +30,8 @@ import com.likelion.duckswell.global.exception.CustomException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -60,6 +63,16 @@ class ChecklistServiceTest {
 
     @InjectMocks
     private ChecklistService checklistService;
+
+    @BeforeEach
+    void setUpCurrentMember() {
+        CurrentMemberContext.set(1L);
+    }
+
+    @AfterEach
+    void clearCurrentMember() {
+        CurrentMemberContext.clear();
+    }
 
     @Test
     void 진행중인_코스가_없으면_빈_리스트를_반환하고_LLM을_호출하지_않는다() {

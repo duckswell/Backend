@@ -11,7 +11,7 @@ import com.likelion.duckswell.domain.dashboard.entity.ChecklistSourceType;
 import com.likelion.duckswell.domain.dashboard.repository.ChecklistItemRepository;
 import com.likelion.duckswell.domain.diagnosis.entity.Diagnosis;
 import com.likelion.duckswell.domain.diagnosis.repository.DiagnosisRepository;
-import com.likelion.duckswell.domain.member.entity.Member;
+import com.likelion.duckswell.domain.member.auth.CurrentMemberContext;
 import com.likelion.duckswell.domain.member.repository.MemberRepository;
 import com.likelion.duckswell.domain.procedure.entity.Procedure;
 import com.likelion.duckswell.domain.procedure.entity.ProcedureAreaType;
@@ -33,10 +33,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 심사(시연) 기간 동안 배포 링크에 다른 참가자가 직접 들어와 앱을 조작해도, 화면의 리셋 버튼
+ * 심사(시연) 기간 동안 심사위원이 각자 자기 기기로 접속해 앱을 조작해 본 뒤, 화면의 리셋 버튼
  * 하나로 정해진 시연 시나리오 상태로 되돌릴 수 있게 하기 위한 데모 전용 리셋 기능.
- * member(id=1)와 마스터 데이터(routine_type/ingredient/product 등)는 건드리지 않고,
- * 코스~체크리스트까지 회원이 실제로 앱을 쓰며 쌓는 데이터만 지운 뒤 고정 시나리오로 재시딩한다.
+ * 현재 게스트 계정과 마스터 데이터(routine_type/ingredient/product 등)는 건드리지 않고,
+ * 그 게스트가 코스~체크리스트까지 앱을 쓰며 쌓은 데이터만 지운 뒤 고정 시나리오로 재시딩한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -60,20 +60,21 @@ public class DemoResetService {
     private final MemberRepository memberRepository;
 
     /**
-     * 인증 없는 API라 동시에 여러 번 호출될 수 있다 - 회원 행에 비관적 락을 걸어 트랜잭션이
-     * 끝날 때까지 유지함으로써, 동시 요청이 clearMemberData()/seedDemoScenario()를 겹쳐
-     * 실행해 코스·루틴·체크리스트가 중복 생성되는 것을 막는다(뒤에 들어온 요청은 락이
-     * 풀릴 때까지 대기했다가 자기 차례에 다시 지우고 새로 시딩한다).
+     * 같은 게스트가 리셋 버튼을 연타하면 요청이 겹쳐 들어올 수 있다 - 그 게스트의 회원 행에
+     * 비관적 락을 걸어 트랜잭션이 끝날 때까지 유지함으로써, 동시 요청이 clearMemberData()/
+     * seedDemoScenario()를 겹쳐 실행해 코스·루틴·체크리스트가 중복 생성되는 것을 막는다
+     * (뒤에 들어온 요청은 락이 풀릴 때까지 대기했다가 자기 차례에 다시 지우고 새로 시딩한다).
      */
     public void reset() {
-        memberRepository.findWithLockById(Member.DEFAULT_ID).orElseThrow();
-        clearMemberData();
-        seedDemoScenario();
+        Long memberId = CurrentMemberContext.getMemberId();
+        memberRepository.findWithLockById(memberId).orElseThrow();
+        clearMemberData(memberId);
+        seedDemoScenario(memberId);
     }
 
-    private void clearMemberData() {
-        List<Course> courses = courseRepository.findByMemberIdOrderByStartedAtDescIdDesc(Member.DEFAULT_ID);
-        checklistItemRepository.deleteByMemberId(Member.DEFAULT_ID);
+    private void clearMemberData(Long memberId) {
+        List<Course> courses = courseRepository.findByMemberIdOrderByStartedAtDescIdDesc(memberId);
+        checklistItemRepository.deleteByMemberId(memberId);
 
         for (Course course : courses) {
             List<Routine> routines = routineRepository.findByCourseIdOrderByRoutineDateDesc(course.getId());
@@ -83,19 +84,19 @@ public class DemoResetService {
             }
             routineRepository.deleteAll(routines);
             procedureRepository.deleteAll(
-                    procedureRepository.findByMemberIdAndCourseIdOrderByProcedureDateDesc(Member.DEFAULT_ID, course.getId()));
+                    procedureRepository.findByMemberIdAndCourseIdOrderByProcedureDateDesc(memberId, course.getId()));
         }
         courseRepository.deleteAll(courses);
     }
 
-    private void seedDemoScenario() {
+    private void seedDemoScenario(Long memberId) {
         LocalDate today = LocalDate.now();
         LocalDate procedureDate = today.minusDays(PROCEDURE_DAYS_AGO);
 
         RoutineType routineType = routineTypeRepository.findById(DEMO_ROUTINE_TYPE_CODE).orElseThrow();
-        Course course = courseRepository.save(new Course(Member.DEFAULT_ID, null, CourseType.FOCUS, routineType, procedureDate));
+        Course course = courseRepository.save(new Course(memberId, null, CourseType.FOCUS, routineType, procedureDate));
 
-        Procedure procedure = new Procedure(Member.DEFAULT_ID, course.getId(), DEMO_PROCEDURE_TYPE, procedureDate, 1, 1);
+        Procedure procedure = new Procedure(memberId, course.getId(), DEMO_PROCEDURE_TYPE, procedureDate, 1, 1);
         procedure.addArea(DEMO_PROCEDURE_AREA);
         procedureRepository.save(procedure);
 
@@ -108,12 +109,12 @@ public class DemoResetService {
         }
 
         checklistItemRepository.save(new ChecklistItem(
-                Member.DEFAULT_ID, course.getId(), today, 0,
+                memberId, course.getId(), today, 0,
                 "간접적 자외선 차단하기",
                 "압출 시술 후에는 피부가 예민할 수 있으니 모자와 마스크로 직접적인 자외선 노출을 피해주세요.",
                 ChecklistSourceType.PROCEDURE_CAUTION));
         checklistItemRepository.save(new ChecklistItem(
-                Member.DEFAULT_ID, course.getId(), today, 1,
+                memberId, course.getId(), today, 1,
                 "충분한 수면과 수분 섭취",
                 "회복기에는 일찍 자고 물을 자주 마시는 것이 피부 회복에 도움이 돼요.",
                 ChecklistSourceType.PROCEDURE_CAUTION));

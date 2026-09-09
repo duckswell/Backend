@@ -12,7 +12,7 @@ import com.likelion.duckswell.domain.dashboard.entity.ChecklistItem;
 import com.likelion.duckswell.domain.dashboard.entity.ChecklistSourceType;
 import com.likelion.duckswell.domain.dashboard.exception.DashboardErrorCode;
 import com.likelion.duckswell.domain.dashboard.repository.ChecklistItemRepository;
-import com.likelion.duckswell.domain.member.entity.Member;
+import com.likelion.duckswell.domain.member.auth.CurrentMemberContext;
 import com.likelion.duckswell.domain.procedure.service.ProcedureService;
 import com.likelion.duckswell.domain.routine.dto.RoutineSnapshot;
 import com.likelion.duckswell.domain.routine.service.RoutineService;
@@ -61,7 +61,7 @@ public class ChecklistService {
         CurrentCourseResponse course = currentCourse.get();
         LocalDate today = LocalDate.now();
         List<ChecklistItem> existingItems = checklistItemRepository.findByMemberIdAndCourseIdAndItemDateOrderByItemOrderAsc(
-                Member.DEFAULT_ID, course.courseId(), today);
+                CurrentMemberContext.getMemberId(), course.courseId(), today);
         if (!existingItems.isEmpty()) {
             return existingItems.stream().map(ChecklistItemResponse::from).toList();
         }
@@ -88,6 +88,7 @@ public class ChecklistService {
      * 결과를 다시 조회해 반환한다.
      */
     private List<ChecklistItemResponse> generateTodayChecklist(CurrentCourseResponse course, Double lat, Double lon, LocalDate today) {
+        Long memberId = CurrentMemberContext.getMemberId();
         LlmChecklistResult result = llmChecklistClient.generate(buildContext(course, lat, lon, today));
         ChecklistSourceType sourceType = resolveSourceType(course.courseType());
 
@@ -95,7 +96,7 @@ public class ChecklistService {
                 .mapToObj(index -> {
                     ChecklistItemDraft draft = result.items().get(index);
                     return new ChecklistItem(
-                            Member.DEFAULT_ID, course.courseId(), today, index, draft.title(), draft.description(), sourceType);
+                            memberId, course.courseId(), today, index, draft.title(), draft.description(), sourceType);
                 })
                 .toList();
 
@@ -104,9 +105,9 @@ public class ChecklistService {
             return savedItems.stream().map(ChecklistItemResponse::from).toList();
         } catch (DataIntegrityViolationException e) {
             log.warn("체크리스트 동시 생성 충돌 감지 - 기존 항목을 재조회합니다 (memberId={}, courseId={}, itemDate={})",
-                    Member.DEFAULT_ID, course.courseId(), today);
+                    memberId, course.courseId(), today);
             List<ChecklistItem> existingItems = checklistItemRepository.findByMemberIdAndCourseIdAndItemDateOrderByItemOrderAsc(
-                    Member.DEFAULT_ID, course.courseId(), today);
+                    memberId, course.courseId(), today);
             return existingItems.stream().map(ChecklistItemResponse::from).toList();
         }
     }
@@ -127,7 +128,7 @@ public class ChecklistService {
     }
 
     private ChecklistItem getOwnedChecklistItem(Long checklistItemId) {
-        return checklistItemRepository.findByIdAndMemberId(checklistItemId, Member.DEFAULT_ID)
+        return checklistItemRepository.findByIdAndMemberId(checklistItemId, CurrentMemberContext.getMemberId())
                 .orElseThrow(() -> new CustomException(DashboardErrorCode.CHECKLIST_ITEM_NOT_FOUND));
     }
 }
