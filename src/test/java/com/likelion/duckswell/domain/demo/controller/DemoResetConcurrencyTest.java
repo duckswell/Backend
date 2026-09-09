@@ -10,13 +10,11 @@ import com.likelion.duckswell.domain.course.entity.RoutineTypeCode;
 import com.likelion.duckswell.domain.course.repository.CourseRepository;
 import com.likelion.duckswell.domain.course.repository.RoutineTypeRepository;
 import com.likelion.duckswell.domain.member.entity.Member;
-import com.likelion.duckswell.domain.member.repository.MemberRepository;
 import com.likelion.duckswell.domain.product.entity.Ingredient;
 import com.likelion.duckswell.domain.product.entity.IngredientCategory;
 import com.likelion.duckswell.domain.product.repository.IngredientRepository;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -31,13 +29,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * 같은 게스트가 리셋 버튼을 연타하면 동시 요청이 들어올 수 있다.
- * DemoResetService.reset()이 그 게스트의 회원 행에 비관적 락을 잡고 정리+재시딩을 끝까지
- * 유지하는지, 그래서 동시 요청에도 코스가 중복 생성되지 않는지를 실제 HTTP 동시 호출로 검증한다.
+ * 인증 없는 API라 심사 기간 중 여러 참가자가 리셋 버튼을 동시에 누를 수 있다.
+ * DemoResetService.reset()이 회원 행에 비관적 락을 잡고 정리+재시딩을 끝까지 유지하는지,
+ * 그래서 동시 요청에도 코스가 중복 생성되지 않는지를 실제 HTTP 동시 호출로 검증한다.
  *
  * DemoResetService는 routine_type/ingredient 마스터 데이터가 이미 있다고 가정하는데,
  * CI는 매번 빈 DB로 시작하므로(deploy.yml의 mysql 서비스 컨테이너) 여기서 필요한 최소
@@ -70,13 +67,7 @@ class DemoResetConcurrencyTest {
     @Autowired
     private IngredientRepository ingredientRepository;
 
-    @Autowired
-    private MemberRepository memberRepository;
-
     private final List<Long> ingredientIdsCreatedByThisTest = new ArrayList<>();
-
-    private Long memberId;
-    private String guestToken;
 
     @BeforeEach
     void ensureDemoMasterData() {
@@ -86,10 +77,6 @@ class DemoResetConcurrencyTest {
         ensureIngredient("히알루론산");
         ensureIngredient("센텔라");
         ensureIngredient("판테놀");
-
-        Member guest = memberRepository.save(Member.createGuest(UUID.randomUUID().toString()));
-        memberId = guest.getId();
-        guestToken = guest.getGuestToken();
     }
 
     @AfterEach
@@ -130,7 +117,7 @@ class DemoResetConcurrencyTest {
             }
         }
 
-        List<Course> courses = courseRepository.findByMemberIdOrderByStartedAtDescIdDesc(memberId);
+        List<Course> courses = courseRepository.findByMemberIdOrderByStartedAtDescIdDesc(Member.DEFAULT_ID);
         assertThat(courses).hasSize(1);
     }
 
@@ -154,9 +141,7 @@ class DemoResetConcurrencyTest {
         return () -> {
             readyLatch.countDown();
             startLatch.await();
-            mockMvc.perform(post("/api/demo/reset")
-                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + guestToken))
-                    .andExpect(status().isOk());
+            mockMvc.perform(post("/api/demo/reset")).andExpect(status().isOk());
             return null;
         };
     }

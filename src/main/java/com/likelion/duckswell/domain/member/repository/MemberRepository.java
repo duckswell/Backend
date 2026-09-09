@@ -8,11 +8,8 @@ import org.springframework.data.jpa.repository.Lock;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
 
-    Optional<Member> findByGuestToken(String guestToken);
-
     /** 동시 요청 직렬화용 - 이 락을 잡고 있는 트랜잭션이 끝날 때까지 같은 회원 행을 잠그려는
-     * 다른 트랜잭션은 대기한다(예: 같은 게스트가 리셋 버튼을 연타할 때
-     * DemoResetService.reset()의 동시 실행 방지). */
+     * 다른 트랜잭션은 대기한다(예: DemoResetService.reset()의 동시 실행 방지). */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Member> findWithLockById(Long id);
 }

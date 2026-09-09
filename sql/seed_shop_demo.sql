@@ -5,16 +5,7 @@
 -- 실행 순서: 1) 이 파일, 2) sql/products_seed.sql (실제 상품 데이터, ingredient가 있어야 하므로 반드시 이 다음)
 --   mysql -u root -p --default-character-set=utf8mb4 -D duckswell < sql/seed_shop_demo.sql
 --   mysql -u root -p --default-character-set=utf8mb4 -D duckswell < sql/products_seed.sql
---
--- 게스트 로그인 도입 후 고정 회원(member id=1)이 없으므로, 이 스크립트가 시드용 게스트 계정을
--- 하나 만들고 그 id로 코스를 넣는다. 실행 후 아래로 토큰을 확인해, 상점 API를 테스트할 때
--- Authorization: Bearer <guest_token> 헤더로 보내면 이 시드 데이터가 보인다.
---   SELECT id, guest_token FROM member WHERE nickname = '시드 게스트';
-
--- 0) 시드용 게스트 계정 (게스트 로그인 도입으로 고정 회원이 없어졌다)
-INSERT INTO member (nickname, guest_token, created_at, updated_at)
-VALUES ('시드 게스트', UUID(), NOW(), NOW());
-SET @memberId = LAST_INSERT_ID();
+-- member_id = 1 (MemberSeeder가 만드는 기본 회원) 기준
 
 -- 1) routine_type 코드 테이블 (course.routine_type_code FK 대상)
 INSERT INTO routine_type (code, name, description, icon_url) VALUES
@@ -64,9 +55,9 @@ INSERT INTO routine_type_ingredient (routine_type_code, ingredient_id) VALUES
 
 -- 3) product는 sql/products_seed.sql에서 실제 크롤링 데이터로 넣는다 (이 파일 다음에 실행)
 
--- 4) Course A: 진행중 코스 (시드 게스트) — "진행중" 분기 테스트용
+-- 4) Course A: 진행중 코스 (member 1) — "진행중" 분기 테스트용
 INSERT INTO course (member_id, procedure_id, course_type, routine_type_code, started_at, ended_at, status, created_at, updated_at)
-VALUES (@memberId, NULL, 'FOCUS', 'HYDRATION', CURDATE() - INTERVAL 4 DAY, NULL, 'IN_PROGRESS', NOW(), NOW());
+VALUES (1, NULL, 'FOCUS', 'HYDRATION', CURDATE() - INTERVAL 4 DAY, NULL, 'IN_PROGRESS', NOW(), NOW());
 SET @courseA = LAST_INSERT_ID();
 
 -- Course A 루틴 5개 (최근 4일 전 ~ 오늘), 성분 카테고리 3종이 골고루 섞이도록 구성
@@ -109,9 +100,9 @@ INSERT INTO routine_step_ingredient (routine_step_id, ingredient_id, ingredient_
   (@sA5_1, @ceramide, 'PRIMARY'),
   (@sA5_2, @vitaminC, 'ALTERNATE');
 
--- 5) Course B: 완료된 과거 코스 (시드 게스트) — "공백기 폴백" 분기 테스트용
+-- 5) Course B: 완료된 과거 코스 (member 1) — "공백기 폴백" 분기 테스트용
 INSERT INTO course (member_id, procedure_id, course_type, routine_type_code, started_at, ended_at, status, created_at, updated_at)
-VALUES (@memberId, NULL, 'DAILY', 'COOLDOWN', CURDATE() - INTERVAL 40 DAY, CURDATE() - INTERVAL 10 DAY, 'COMPLETED', NOW(), NOW());
+VALUES (1, NULL, 'DAILY', 'COOLDOWN', CURDATE() - INTERVAL 40 DAY, CURDATE() - INTERVAL 10 DAY, 'COMPLETED', NOW(), NOW());
 SET @courseB = LAST_INSERT_ID();
 
 INSERT INTO routine (course_id, routine_date, created_at, updated_at) VALUES (@courseB, CURDATE() - INTERVAL 40 DAY, NOW(), NOW());

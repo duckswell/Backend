@@ -3,7 +3,7 @@ package com.likelion.duckswell.domain.procedure.service;
 import com.likelion.duckswell.domain.course.dto.CurrentCourseResponse;
 import com.likelion.duckswell.domain.course.entity.CourseType;
 import com.likelion.duckswell.domain.course.service.CourseService;
-import com.likelion.duckswell.domain.member.auth.CurrentMemberContext;
+import com.likelion.duckswell.domain.member.entity.Member;
 import com.likelion.duckswell.domain.procedure.dto.ProcedureItemRequest;
 import com.likelion.duckswell.domain.procedure.dto.ProcedureRegisterRequest;
 import com.likelion.duckswell.domain.procedure.dto.ProcedureResponse;
@@ -26,14 +26,14 @@ public class ProcedureService {
     private final CourseService courseService;
 
     public List<ProcedureResponse> getMyProcedures() {
-        return procedureRepository.findByMemberIdOrderByProcedureDateDesc(CurrentMemberContext.getMemberId()).stream()
+        return procedureRepository.findByMemberIdOrderByProcedureDateDesc(Member.DEFAULT_ID).stream()
                 .map(ProcedureResponse::from)
                 .toList();
     }
 
     /** 지금 진행 중인 코스에 등록된 시술만 조회한다 - 코스가 끝나면 그 코스에서 등록한 시술은 더 이상 반환되지 않는다. */
     public List<ProcedureResponse> getProceduresForCourse(Long courseId) {
-        return procedureRepository.findByMemberIdAndCourseIdOrderByProcedureDateDesc(CurrentMemberContext.getMemberId(), courseId).stream()
+        return procedureRepository.findByMemberIdAndCourseIdOrderByProcedureDateDesc(Member.DEFAULT_ID, courseId).stream()
                 .map(ProcedureResponse::from)
                 .toList();
     }
@@ -71,7 +71,7 @@ public class ProcedureService {
     }
 
     private Procedure save(Long courseId, ProcedureItemRequest item) {
-        Procedure procedure = new Procedure(CurrentMemberContext.getMemberId(), courseId, item.procedureType(), item.procedureDate(), item.currentCount(), item.totalCount());
+        Procedure procedure = new Procedure(Member.DEFAULT_ID, courseId, item.procedureType(), item.procedureDate(), item.currentCount(), item.totalCount());
         item.areas().forEach(procedure::addArea);
         return procedureRepository.save(procedure);
     }
@@ -96,7 +96,7 @@ public class ProcedureService {
     }
 
     private Procedure getOwnedProcedure(Long procedureId) {
-        return procedureRepository.findByIdAndMemberId(procedureId, CurrentMemberContext.getMemberId())
+        return procedureRepository.findByIdAndMemberId(procedureId, Member.DEFAULT_ID)
                 .orElseThrow(() -> new CustomException(ProcedureErrorCode.PROCEDURE_NOT_FOUND));
     }
 }

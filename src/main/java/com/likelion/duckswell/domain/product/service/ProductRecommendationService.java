@@ -3,7 +3,7 @@ package com.likelion.duckswell.domain.product.service;
 import com.likelion.duckswell.domain.course.entity.Course;
 import com.likelion.duckswell.domain.course.entity.CourseStatus;
 import com.likelion.duckswell.domain.course.repository.CourseRepository;
-import com.likelion.duckswell.domain.member.auth.CurrentMemberContext;
+import com.likelion.duckswell.domain.member.entity.Member;
 import com.likelion.duckswell.domain.product.dto.IngredientResponse;
 import com.likelion.duckswell.domain.product.entity.Ingredient;
 import com.likelion.duckswell.domain.product.repository.IngredientRepository;
@@ -52,17 +52,16 @@ public class ProductRecommendationService {
     }
 
     private List<Long> resolveRecommendedIngredientIds() {
-        Long memberId = CurrentMemberContext.getMemberId();
-        Optional<Course> activeCourse = courseRepository.findByMemberIdAndStatus(memberId, CourseStatus.IN_PROGRESS);
+        Optional<Course> activeCourse = courseRepository.findByMemberIdAndStatus(Member.DEFAULT_ID, CourseStatus.IN_PROGRESS);
         if (activeCourse.isPresent()) {
             List<Routine> routines = routineRepository.findByCourseIdOrderByRoutineDateDesc(activeCourse.get().getId());
             log.info("추천 성분 근거 - basis=ACTIVE_COURSE, courseId={}, routineCount={}", activeCourse.get().getId(), routines.size());
             return collectIngredientIds(routines);
         }
 
-        Optional<Course> fallbackCourse = courseRepository.findFirstByMemberIdAndStatusOrderByEndedAtDesc(memberId, CourseStatus.COMPLETED);
+        Optional<Course> fallbackCourse = courseRepository.findFirstByMemberIdAndStatusOrderByEndedAtDesc(Member.DEFAULT_ID, CourseStatus.COMPLETED);
         if (fallbackCourse.isEmpty()) {
-            log.info("추천 성분 근거 - basis=NO_HISTORY, memberId={}", memberId);
+            log.info("추천 성분 근거 - basis=NO_HISTORY, memberId={}", Member.DEFAULT_ID);
             return List.of();
         }
         Long fallbackCourseId = fallbackCourse.get().getId();

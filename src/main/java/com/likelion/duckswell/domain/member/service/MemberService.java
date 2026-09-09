@@ -1,6 +1,5 @@
 package com.likelion.duckswell.domain.member.service;
 
-import com.likelion.duckswell.domain.member.auth.CurrentMemberContext;
 import com.likelion.duckswell.domain.member.entity.Member;
 import com.likelion.duckswell.domain.member.exception.MemberErrorCode;
 import com.likelion.duckswell.domain.member.repository.MemberRepository;
@@ -17,7 +16,14 @@ public class MemberService {
     private final MemberRepository memberRepository;
 
     public Member getCurrentMember() {
-        return memberRepository.findById(CurrentMemberContext.getMemberId())
+        return memberRepository.findById(Member.DEFAULT_ID)
                 .orElseThrow(() -> new CustomException(MemberErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    @Transactional
+    public void createDefaultMemberIfNotExists() {
+        if (!memberRepository.existsById(Member.DEFAULT_ID)) {
+            memberRepository.save(Member.createDefault());
+        }
     }
 }
