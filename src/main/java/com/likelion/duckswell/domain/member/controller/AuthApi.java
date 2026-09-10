@@ -26,4 +26,14 @@ public interface AuthApi {
                     """
     )
     ResponseEntity<ApiResponse<GuestSessionResponse>> startGuest(String authorizationHeader);
+
+    @SecurityRequirements
+    @Operation(
+            summary = "헬스체크",
+            description = """
+                    컨테이너 헬스체크 전용 엔드포인트입니다. 인증 없이 항상 200을 반환하며,
+                    애플리케이션이 요청을 처리할 수 있는 상태인지만 확인합니다.
+                    """
+    )
+    ResponseEntity<Void> health();
 }

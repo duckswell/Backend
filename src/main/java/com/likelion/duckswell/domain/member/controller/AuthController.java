@@ -6,6 +6,7 @@ import com.likelion.duckswell.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,5 +24,11 @@ public class AuthController implements AuthApi {
     public ResponseEntity<ApiResponse<GuestSessionResponse>> startGuest(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader) {
         return ResponseEntity.ok(ApiResponse.success(authService.startGuest(authorizationHeader)));
+    }
+
+    @Override
+    @GetMapping("/health")
+    public ResponseEntity<Void> health() {
+        return ResponseEntity.ok().build();
     }
 }
