@@ -59,8 +59,9 @@ ENV DUCKSWELL_AI_PYTHON_PATH=/opt/venv/bin/python \
 
 EXPOSE 8080
 
-# actuator는 없지만 permitAll로 열려있는 /api/members/me를 헬스체크 대용으로 사용
+# 게스트 인증 인터셉터(/api/**)에서 제외되는 /api/auth/health를 헬스체크에 사용
+# (예전 /api/members/me는 게스트 로그인 도입 후 토큰이 없으면 401이라 헬스체크가 항상 실패했다)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=5 \
-    CMD curl -f http://localhost:8080/api/members/me || exit 1
+    CMD curl -f http://localhost:8080/api/auth/health || exit 1
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
