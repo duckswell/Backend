@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -75,16 +76,54 @@ class ChecklistServiceTest {
     }
 
     @Test
-    void 진행중인_코스가_없으면_빈_리스트를_반환하고_LLM을_호출하지_않는다() {
+    void 진행중인_코스가_없으면_날씨_기반_기본_체크리스트를_생성하고_WEATHER_DEFAULT로_저장한다() {
         // given
         when(courseService.getCurrentCourse()).thenReturn(Optional.empty());
+        when(checklistItemRepository.findByMemberIdAndCourseIdAndItemDateOrderByItemOrderAsc(
+                anyLong(), eq(ChecklistItem.NO_COURSE_ID), any())).thenReturn(List.of());
+        when(weatherService.getTodayForecast(null, null))
+                .thenReturn(new WeatherResponse(20.0, "Sunny", 20, 8.0, 10.0, 10.0, 1));
+        when(llmChecklistClient.generateDefault(any(), any())).thenReturn(new LlmChecklistResult(List.of(
+                new ChecklistItemDraft("자외선 피하기", "낮 동안 자외선이 강해서 외출 시 챙겨주세요."),
+                new ChecklistItemDraft("수분 보충하기", "습도가 낮아 건조한 날이라 보습이 필요해요.")
+        )));
+        when(checklistItemRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
         List<ChecklistItemResponse> result = checklistService.getTodayChecklist(null, null);
 
         // then
-        assertThat(result).isEmpty();
+        assertThat(result).extracting(ChecklistItemResponse::title)
+                .containsExactly("자외선 피하기", "수분 보충하기");
         verify(llmChecklistClient, never()).generate(any());
+        verify(llmChecklistClient, times(1)).generateDefault(any(), any());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ChecklistItem>> captor = ArgumentCaptor.forClass(List.class);
+        verify(checklistItemRepository).saveAll(captor.capture());
+        assertThat(captor.getValue()).allSatisfy(item -> {
+            assertThat(item.getSourceType()).isEqualTo(ChecklistSourceType.WEATHER_DEFAULT);
+            assertThat(item.getCourseId()).isEqualTo(ChecklistItem.NO_COURSE_ID);
+        });
+    }
+
+    @Test
+    void 진행중인_코스가_없어도_오늘_생성된_기본_체크리스트가_있으면_그대로_반환하고_LLM을_호출하지_않는다() {
+        // given
+        ChecklistItem existing1 = new ChecklistItem(
+                1L, ChecklistItem.NO_COURSE_ID, LocalDate.now(), 0, "제목1", "설명1", ChecklistSourceType.WEATHER_DEFAULT);
+        ChecklistItem existing2 = new ChecklistItem(
+                1L, ChecklistItem.NO_COURSE_ID, LocalDate.now(), 1, "제목2", "설명2", ChecklistSourceType.WEATHER_DEFAULT);
+        when(courseService.getCurrentCourse()).thenReturn(Optional.empty());
+        when(checklistItemRepository.findByMemberIdAndCourseIdAndItemDateOrderByItemOrderAsc(
+                anyLong(), eq(ChecklistItem.NO_COURSE_ID), any())).thenReturn(List.of(existing1, existing2));
+
+        // when
+        List<ChecklistItemResponse> result = checklistService.getTodayChecklist(null, null);
+
+        // then
+        assertThat(result).extracting(ChecklistItemResponse::title).containsExactly("제목1", "제목2");
+        verify(llmChecklistClient, never()).generateDefault(any(), any());
     }
 
     @Test

@@ -27,6 +27,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChecklistItem extends BaseEntity {
 
+    /**
+     * 아직 코스를 시작하지 않은 회원(주로 게스트 최초 진입)의 기본 체크리스트를 나타내는 예약
+     * course_id 값. 실제 Course는 IDENTITY 채번이라 1부터 시작하므로 0과 충돌하지 않는다.
+     * courseId를 nullable로 바꾸지 않는 이유는, MySQL 유니크 제약이 NULL을 여러 개 허용해
+     * 동시 생성 시 중복 방지가 깨지기 때문이다.
+     */
+    public static final Long NO_COURSE_ID = 0L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

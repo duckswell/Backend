@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
@@ -26,6 +27,8 @@ import org.springframework.stereotype.Component;
  * LLM 호출 (진행 코스 컨텍스트 → 오늘의 체크리스트 2개) 클라이언트.
  * FOCUS는 시술/루틴 이력을, DAILY는 오늘 날씨/루틴 이력을 근거로 삼는다 - 코스 타입별로
  * 시스템 프롬프트를 분리해 서로 다른 관점(시술 후 주의사항 vs 날씨 기반 케어)을 강제한다.
+ * 아직 코스를 시작하지 않은 회원(주로 게스트 최초 진입)에게는 {@link #generateDefault}로
+ * 오늘 날씨만 근거로 한 기본 체크리스트를 별도 프롬프트로 생성한다.
  */
 @Slf4j
 @Component
@@ -37,17 +40,54 @@ public class LlmChecklistClient {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final String focusSystemPrompt;
     private final String dailySystemPrompt;
+    private final String defaultSystemPrompt;
 
     public LlmChecklistClient(OpenAiChatClient openAiChatClient) {
         this.openAiChatClient = openAiChatClient;
         this.focusSystemPrompt = loadSystemPrompt("prompts/checklist-focus-system.txt");
         this.dailySystemPrompt = loadSystemPrompt("prompts/checklist-daily-system.txt");
+        this.defaultSystemPrompt = loadSystemPrompt("prompts/checklist-default-system.txt");
     }
 
     public LlmChecklistResult generate(LlmChecklistContext context) {
         ObjectNode requestBody = buildRequestBody(context);
         JsonNode response = openAiChatClient.call(requestBody, DashboardErrorCode.LLM_RESPONSE_INVALID);
         return parseResult(response);
+    }
+
+    /** 진행 중인 코스가 없을 때, 오늘 날짜와 실제 날씨만 근거로 기본 체크리스트 2개를 생성한다. */
+    public LlmChecklistResult generateDefault(LocalDate today, WeatherResponse weather) {
+        ObjectNode requestBody = buildDefaultRequestBody(today, weather);
+        JsonNode response = openAiChatClient.call(requestBody, DashboardErrorCode.LLM_RESPONSE_INVALID);
+        return parseResult(response);
+    }
+
+    private ObjectNode buildDefaultRequestBody(LocalDate today, WeatherResponse weather) {
+        ObjectNode root = objectMapper.createObjectNode();
+        root.put("model", openAiChatClient.model());
+        root.set("messages", buildDefaultMessages(today, weather));
+        root.set("response_format", buildResponseFormat());
+        return root;
+    }
+
+    private ArrayNode buildDefaultMessages(LocalDate today, WeatherResponse weather) {
+        ArrayNode messages = objectMapper.createArrayNode();
+
+        ObjectNode systemMessage = objectMapper.createObjectNode();
+        systemMessage.put("role", "system");
+        systemMessage.put("content", defaultSystemPrompt);
+        messages.add(systemMessage);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("[오늘 날짜] ").append(today).append('\n');
+        appendWeather(sb, weather);
+
+        ObjectNode userMessage = objectMapper.createObjectNode();
+        userMessage.put("role", "user");
+        userMessage.put("content", sb.toString());
+        messages.add(userMessage);
+
+        return messages;
     }
 
     private ObjectNode buildRequestBody(LlmChecklistContext context) {
